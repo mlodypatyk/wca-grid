@@ -1,0 +1,233 @@
+import { useEffect, useState } from 'react'
+import './App.css'
+import { Dialog, DialogPanel } from '@headlessui/react'
+import './DialogStyles.css'
+import type { Person } from './wca_types'
+import { Bounce, ToastContainer, toast } from 'react-toastify'
+import { Share } from '@boxicons/react'
+import { getNameFromId } from './eventNames'
+
+
+type Grid = {
+  h: string[],
+  v: string[],
+  v_people: string[][],
+  h_people: string[][]
+}
+
+type TileState = {
+  state : Person | null;
+}
+
+type GridState = {
+  state: TileState[][];
+}
+
+function App() {
+  const [grid, setGrid] = useState<Grid | null>(null);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [searchPeople, setSearchPeople] = useState<Person[]>([]);
+  const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentH, setCurrentH] = useState<number>(0);
+  const [currentV, setCurrentV] = useState<number>(0);
+  const [gridState, setGridState] = useState<GridState>({state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]})
+  const [guessesRemaining, setGuessesRemaining] = useState<number>(12);
+  const closeModal = () => setModalOpen(false);
+
+  useEffect(() => {loadGridFromApi()}, [])
+
+  useEffect(() => {
+    if (searchTerm === "") return;
+    const delayDebounceFn = setTimeout(() => {loadPeopleFromApi()}, 1000)
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchTerm])
+
+  const loadGridFromApi = function () {
+    fetch('http://localhost:5000/get_grid').then((result) => {result.json().then((json) => setGrid(json))});
+  }
+
+  const loadPeopleFromApi = function () {
+    setSearchLoading(true);
+    fetch(`https://www.worldcubeassociation.org/api/v0/search/users?q=${searchTerm}&persons_table=true`).then((result) => {result.json().then((json) => {setSearchLoading(false); setSearchPeople(json.result)})});
+  }
+
+  const toastWrongGuess = function () {
+    toast.error('Wrong guess!', {
+      position: "top-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "colored",
+      transition: Bounce,
+      });
+    
+  }
+
+  const toastAlreadyGuessed = function () {
+    toast.warn('Already guessed.', {
+      position: "top-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "colored",
+      transition: Bounce,
+  });
+  }
+
+  const handleClick = function (h: number, v: number) {
+    console.log(`h: ${h}, v: ${v}`)
+    if(gridState.state[h][v].state != null) return;
+    if(guessesRemaining == 0) return;
+    setCurrentH(h);
+    setCurrentV(v);
+    setModalOpen(true);
+  }
+
+  const handleGuess = function(person: Person) {
+    let wca_id = person.wca_id;
+    if(grid == null) return;
+    for(let i=0;i<3;i++){
+      for(let j=0;j<3;j++){
+        let slot = gridState.state[i][j].state;
+        if(slot != null && slot.wca_id == person.wca_id){
+          toastAlreadyGuessed();
+          return;
+        }
+      }
+    }
+    setGuessesRemaining(guessesRemaining-1);
+    if(!grid.v_people[currentV].includes(wca_id))
+    {
+      toastWrongGuess();
+      return;
+    }
+    if(!grid.h_people[currentH].includes(wca_id))
+    {
+      toastWrongGuess();
+      return;
+    }
+    let newGridState = gridState;
+    newGridState.state[currentH][currentV].state = person;
+    setGridState(newGridState);
+  }
+
+  const getGridTile = function(h: number, v: number) { 
+    let person = gridState.state[h][v].state
+    if(person == null) return "";
+    return <div className="person-display"><img src={person.avatar.thumb_url}></img><p className="name-tag">{person.name}</p></div>
+  }
+
+  const handleNewGameClick = function () {
+    loadGridFromApi();
+    setGridState({state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]})
+    setGuessesRemaining(12);
+  }
+
+  const gameState = function() {
+    let isSolved = true;
+    for(let i=0;i<3;i++){
+      for(let j=0;j<3;j++){
+        let slot = gridState.state[i][j].state;
+        if(slot == null){
+          isSolved = false;
+        }
+      }
+    }
+    if(isSolved){
+      return "win";
+    } else if(guessesRemaining == 0 ){
+      return "lose";
+    } else {
+      return "ongoing"
+    }
+  }
+
+  const getReadableCategoryName = function(category: string) {
+    let catType = category.split(':')[0];
+    let catData = category.split(':')[1];
+    if (catType == 'result'){
+      let event = catData.split(' ')[1];
+      let requirement = catData.split(' ')[2].substring(4)
+      return `${getNameFromId(event)} under ${parseFloat(requirement).toString()}s`
+    }
+    if (catType == 'cont_podium'){
+      return `Continental championship podium: ${catData.substring(2)}`
+    }
+    if (catType == 'worlds_podium'){
+      return `World championship podium`
+    }
+    if (catType == 'comps'){
+      return `${catData.substring(1)} competitions`
+    }
+    return category
+  }
+  return (
+    <>
+      {grid == null  ? <p>loading...</p> : 
+    <div>
+      <ToastContainer />
+      <div className="guessInfo">Guesses remaining: {guessesRemaining}</div>
+      <Dialog open={modalOpen} onClose={closeModal} className="dialog-wrapper">
+          <div className="dialog-backdrop" />
+          <div className="dialog-container">
+          <DialogPanel className="dialog-panel">
+            <input className="search-input" type="text" autoFocus onChange={(e) => setSearchTerm(e.target.value)}></input>
+            {searchLoading && <p>loading...</p>}
+            <div className="people-results">
+            {searchPeople.map((person, i) => <p key={i} onClick={() => {handleGuess(person); closeModal(); setSearchPeople([])}}>{person.name} {person.wca_id}</p>)}
+            </div>
+            <p><button onClick={() => setModalOpen(false)}>Close</button></p>
+          </DialogPanel>
+          </div>
+      </Dialog>
+      <div className = "grid">
+        <div className="grid-row">
+          <div className="grid-square"></div>
+          <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[0])}</p></div>
+          <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[1])}</p></div>
+          <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[2])}</p></div>
+        </div>
+        <div className="grid-row">
+          <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.h[0])}</p></div>
+          <div className="grid-square" onClick={() => handleClick(0, 0)}>{getGridTile(0, 0)}</div>
+          <div className="grid-square" onClick={() => handleClick(0, 1)}>{getGridTile(0, 1)}</div>
+          <div className="grid-square" onClick={() => handleClick(0, 2)}>{getGridTile(0, 2)}</div>
+        </div>
+        <div className="grid-row">
+          <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.h[1])}</p></div>
+          <div className="grid-square" onClick={() => handleClick(1, 0)}>{getGridTile(1, 0)}</div>
+          <div className="grid-square" onClick={() => handleClick(1, 1)}>{getGridTile(1, 1)}</div>
+          <div className="grid-square" onClick={() => handleClick(1, 2)}>{getGridTile(1, 2)}</div>
+        </div>
+        <div className="grid-row">
+          <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.h[2])}</p></div>
+          <div className="grid-square" onClick={() => handleClick(2, 0)}>{getGridTile(2, 0)}</div>
+          <div className="grid-square" onClick={() => handleClick(2, 1)}>{getGridTile(2, 1)}</div>
+          <div className="grid-square" onClick={() => handleClick(2, 2)}>{getGridTile(2, 2)}</div>
+        </div>
+      </div>
+      {gameState() == "win" && <div className="result-box win">
+        <p className="result-box-text">You won! With {guessesRemaining} {guessesRemaining == 1 ? "guess" : "guesses"} remaining. </p>
+        <p>Share your result!</p>
+        <button className="shareButton"><span className="buttonText">Share</span> <Share /></button>
+      </div>}
+      {gameState() == "lose" && <div className="result-box lose">
+        <p className="result-box-text">You lost 😞</p>
+        <p>Share your result!</p>
+        <button className="shareButton"><span className="buttonText">Share</span> <Share /></button>
+      </div>}
+      {gameState() != "ongoing" && <button className="resetButton" onClick={handleNewGameClick}>New game</button>}
+    </div>}
+
+    </>
+  )
+}
+
+export default App

@@ -1,0 +1,4 @@
+.env
+wca_grid.egg-info/
+.venv
+data.pickle

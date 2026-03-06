@@ -1,0 +1,91 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.grid-square {
+  height: 150px;
+  width: 150px;
+  background: lightblue;
+  display: flex;
+  margin: 5px;
+  align-items: center;
+  border-radius: 5px;
+}
+@media (prefers-color-scheme: dark) {
+  .grid-square {
+    background: #213547;
+  }
+}
+.grid-row {
+  display: flex
+}
+.grid-content {
+    vertical-align: middle;
+    display: inline-block;
+    width: 100%;
+    margin: 10px;
+}
+.person-display {
+    margin: auto;
+}
+.name-tag {
+  margin: 0;
+}
+.search-input {
+  height: 2em;
+  width: 20em;
+  border: none;
+  border-radius: 0.4em;
+  padding-left: 0.5em;
+}
+.search-input:focus {
+  outline: solid rgba(255, 255, 255, 0.75); 
+}
+.result-box {
+    height: 150px;
+    border-radius: 10px;
+    margin: 5px;
+}
+.win {
+  background-color: darkseagreen;
+}
+.lose {
+  background-color: indianred;
+}
+.shareButton {
+  display: inline-flex;
+}
+.buttonText {
+  padding-right: 0.5em;
+}
+.result-box-text {
+  padding-top: 1em;
+}
+.resetButton {
+  margin: 1em;
+}
