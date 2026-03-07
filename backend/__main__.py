@@ -6,7 +6,7 @@ from flask_cors import CORS
 def generate_grid(categories, data):
     weights = {
         'result': 10,
-        'worlds_podium': 3,
+        'worlds_podium': 2,
         'cont_podium': 2,
         'comps': 1
     }
