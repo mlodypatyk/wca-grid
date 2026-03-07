@@ -33,7 +33,10 @@ function App() {
   const [currentV, setCurrentV] = useState<number>(0);
   const [gridState, setGridState] = useState<GridState>({state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]})
   const [guessesRemaining, setGuessesRemaining] = useState<number>(12);
+  const [showSolutions, setShowSolutions] = useState<boolean>(false);
   const closeModal = () => setModalOpen(false);
+  const [solutionsDialog, setSolutionsDialog] = useState<boolean>(false);
+  const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
 
   useEffect(() => {loadGridFromApi()}, [])
 
@@ -121,7 +124,14 @@ function App() {
   const getGridTile = function(h: number, v: number) { 
     let person = gridState.state[h][v].state
     if(person == null) return "";
-    return <div className="person-display"><img src={person.avatar.thumb_url}></img><p className="name-tag">{person.name}</p></div>
+    if(grid == null) return;
+    if (!showSolutions){
+      return <div className="person-display"><img src={person.avatar.thumb_url}></img><p className="name-tag">{person.name}</p></div>
+    }
+    else{
+      const solutions = grid.h_people[h].filter((value) => grid.v_people[v].includes(value))
+      return <div className="solution-display" onClick={()=>{setSolutionsPeople(solutions); setSolutionsDialog(true)}}><p>Solutions: {solutions.length}</p></div>
+    }
   }
 
   const handleNewGameClick = function () {
@@ -155,7 +165,7 @@ function App() {
     if (catType == 'result'){
       let event = catData.split(' ')[1];
       let requirement = catData.split(' ')[2].substring(4)
-      return `${getNameFromId(event)} under ${parseFloat(requirement).toString()}s`
+      return `${getNameFromId(event)} under ${parseFloat(requirement).toString()}${event == '333fm' ? ' moves' : 's'}`
     }
     if (catType == 'cont_podium'){
       return `Continental championship podium: ${catData.substring(2)}`
@@ -185,6 +195,15 @@ function App() {
             </div>
             <p><button onClick={() => setModalOpen(false)}>Close</button></p>
           </DialogPanel>
+          </div>
+      </Dialog>
+      <Dialog open={solutionsDialog} onClose={()=>setSolutionsDialog(false)} className="dialog-wrapper">
+        <div className="dialog-backdrop" />
+          <div className="dialog-container">
+            <DialogPanel className="dialog-panel">
+            {solutionsPeople.map((person, i) => <p key={i}><a href={`https://www.worldcubeassociation.org/persons/${person}`} target="_blank">{person}</a></p>)}
+            <p><button onClick={() => setSolutionsDialog(false)}>Close</button></p>
+            </DialogPanel>
           </div>
       </Dialog>
       <div className = "grid">
@@ -223,7 +242,7 @@ function App() {
         <p>Share your result!</p>
         <button className="shareButton"><span className="buttonText">Share</span> <Share /></button>
       </div>}
-      {gameState() != "ongoing" && <button className="resetButton" onClick={handleNewGameClick}>New game</button>}
+      {gameState() != "ongoing" && <p><button onClick={() => setShowSolutions(!showSolutions)}>{showSolutions ? 'Hide solutions' : 'Show solutions'}</button><button className="resetButton" onClick={handleNewGameClick}>New game</button></p>}
     </div>}
 
     </>
