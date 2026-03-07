@@ -55,6 +55,10 @@ function App() {
     fetch(`https://www.worldcubeassociation.org/api/v0/search/users?q=${searchTerm}&persons_table=true`).then((result) => {result.json().then((json) => {setSearchLoading(false); setSearchPeople(json.result)})});
   }
 
+  const toastPlaceholder = function () {
+    toast('this is not ready😋😋😋😋')
+  }
+
   const toastWrongGuess = function () {
     toast.error('Wrong guess!', {
       position: "top-center",
@@ -235,16 +239,15 @@ function App() {
       {gameState() == "win" && <div className="result-box win">
         <p className="result-box-text">You won! With {guessesRemaining} {guessesRemaining == 1 ? "guess" : "guesses"} remaining. </p>
         <p>Share your result!</p>
-        <button className="shareButton"><span className="buttonText">Share</span> <Share /></button>
+        <button className="shareButton" onClick={toastPlaceholder}><span className="buttonText">Share</span> <Share /></button>
       </div>}
       {gameState() == "lose" && <div className="result-box lose">
         <p className="result-box-text">You lost 😞</p>
         <p>Share your result!</p>
-        <button className="shareButton"><span className="buttonText">Share</span> <Share /></button>
+        <button className="shareButton" onClick={toastPlaceholder}><span className="buttonText">Share</span> <Share /></button>
       </div>}
       {gameState() != "ongoing" && <p><button onClick={() => setShowSolutions(!showSolutions)}>{showSolutions ? 'Hide solutions' : 'Show solutions'}</button><button className="resetButton" onClick={handleNewGameClick}>New game</button></p>}
     </div>}
-
     </>
   )
 }
