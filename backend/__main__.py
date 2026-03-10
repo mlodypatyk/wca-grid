@@ -78,7 +78,7 @@ def generate_grid(categories, data):
 
 app = Flask(__name__)
 CORS(app)
-@app.route('/get_grid')
+@app.route('/api/get_grid')
 def get_grid():
     data = pickle.load(open('data.pickle', 'rb'))
     categories = list(data.keys())

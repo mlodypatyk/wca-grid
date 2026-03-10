@@ -47,7 +47,7 @@ function App() {
   }, [searchTerm])
 
   const loadGridFromApi = function () {
-    fetch('http://localhost:5000/get_grid').then((result) => {result.json().then((json) => setGrid(json))});
+    fetch('https://grid.shab.waw.pl/api/get_grid').then((result) => {result.json().then((json) => setGrid(json))});
   }
 
   const loadPeopleFromApi = function () {
