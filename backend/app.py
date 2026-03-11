@@ -90,4 +90,5 @@ def get_grid():
         'h_people': [list(data[h[0]]), list(data[h[1]]), list(data[h[2]])],
     })
 
-app.run(debug=True)
+if __name__ == '__main__':
+    app.run()
