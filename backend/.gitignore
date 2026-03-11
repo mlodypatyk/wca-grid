@@ -2,3 +2,4 @@
 wca_grid.egg-info/
 .venv
 data.pickle
+__pycache__
