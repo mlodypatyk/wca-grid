@@ -28,6 +28,10 @@
   align-items: center;
   text-align: center;
 }
+.solutions-scrollable {
+  max-height: 65vh;
+  overflow-y: auto;
+}
 
 @media (prefers-color-scheme: dark) {
   .dialog-panel {

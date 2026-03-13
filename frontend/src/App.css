@@ -41,6 +41,12 @@
     background: #213547;
   }
 }
+
+@media (prefers-color-scheme: light) {
+  .search-input {
+    background: lightblue;
+  }
+}
 .grid-row {
   display: flex
 }
@@ -95,4 +101,27 @@
     justify-items: center;
     align-items: center;
     display: grid;
+}
+@media (max-width:480px) {
+  .grid-square {
+    width: 20vw;
+    height: 20vw;
+    font-size: 12px;
+  }
+  .grid-content {
+      margin: 5px;
+  }
+  .dialog-panel {
+      width: 80vw;
+      align-self: center;
+  }
+  #root {
+    padding: 0;
+  }
+  .name-tag {
+    font-size: 8px;
+  }
+  img {
+      width: 60%;
+  }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
+import './DialogStyles.css'
 import './App.css'
 import { Dialog, DialogPanel } from '@headlessui/react'
-import './DialogStyles.css'
 import type { Person } from './wca_types'
 import { Bounce, ToastContainer, toast } from 'react-toastify'
 import { Share } from '@boxicons/react'
@@ -127,14 +127,14 @@ function App() {
 
   const getGridTile = function(h: number, v: number) { 
     let person = gridState.state[h][v].state
-    if(person == null) return "";
     if(grid == null) return;
-    if (!showSolutions){
-      return <div className="person-display"><img src={person.avatar.thumb_url}></img><p className="name-tag">{person.name}</p></div>
-    }
-    else{
+    if (showSolutions){
       const solutions = grid.h_people[h].filter((value) => grid.v_people[v].includes(value))
       return <div className="solution-display" onClick={()=>{setSolutionsPeople(solutions); setSolutionsDialog(true)}}><p>Solutions: {solutions.length}</p></div>
+    }
+    if(person == null) return "";
+    if(!showSolutions){
+      return <div className="person-display"><img src={person.avatar.thumb_url}></img><p className="name-tag">{person.name}</p></div>
     }
   }
 
@@ -142,6 +142,7 @@ function App() {
     loadGridFromApi();
     setGridState({state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]})
     setGuessesRemaining(12);
+    setShowSolutions(false);
   }
 
   const gameState = function() {
@@ -205,7 +206,9 @@ function App() {
         <div className="dialog-backdrop" />
           <div className="dialog-container">
             <DialogPanel className="dialog-panel">
-            {solutionsPeople.map((person, i) => <p key={i}><a href={`https://www.worldcubeassociation.org/persons/${person}`} target="_blank">{person}</a></p>)}
+            <div className="solutions-scrollable">
+              {solutionsPeople.map((person, i) => <p key={i}><a href={`https://www.worldcubeassociation.org/persons/${person}`} target="_blank">{person}</a></p>)}
+            </div>
             <p><button onClick={() => setSolutionsDialog(false)}>Close</button></p>
             </DialogPanel>
           </div>
