@@ -4,8 +4,6 @@ name = "wca-grid"
 version = "1.0.0"
 
 dependencies = [
-    "mysql.connector",
-    "python-dotenv",
     "flask",
     "flask-cors"
 ]

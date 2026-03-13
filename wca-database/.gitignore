@@ -1,0 +1,5 @@
+.env
+wca_grid_database.egg-info/
+.venv
+data.pickle
+__pycache__

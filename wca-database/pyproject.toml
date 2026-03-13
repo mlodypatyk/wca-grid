@@ -1,0 +1,13 @@
+[project]
+name = "wca-grid-database"
+
+version = "1.0.0"
+
+dependencies = [
+    "mysql.connector",
+    "python-dotenv",
+    "paramiko"
+]
+
+[tool.setuptools]
+py-modules = []
