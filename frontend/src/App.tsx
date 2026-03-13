@@ -132,7 +132,7 @@ function App() {
       const solutions = grid.h_people[h].filter((value) => grid.v_people[v].includes(value))
       return <div className="solution-display" onClick={()=>{setSolutionsPeople(solutions); setSolutionsDialog(true)}}><p>Solutions: {solutions.length}</p></div>
     }
-    if(person == null) return "";
+    if(person == null) return <div className="inner"></div>
     if(!showSolutions){
       return <div className="person-display"><img src={person.avatar.thumb_url}></img><p className="name-tag">{person.name}</p></div>
     }
