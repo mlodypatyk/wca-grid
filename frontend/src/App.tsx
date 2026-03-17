@@ -195,7 +195,7 @@ function App() {
           <DialogPanel className="dialog-panel">
             <input className="search-input" type="text" autoFocus onChange={(e) => setSearchTerm(e.target.value)}></input>
             {searchLoading && <p>loading...</p>}
-            <div className="people-results">
+            <div className="solutions-scrollable">
             {searchPeople.map((person, i) => <p key={i} onClick={() => {handleGuess(person); closeModal(); setSearchPeople([])}}>{person.name} {person.wca_id}</p>)}
             </div>
             <p><button onClick={() => setModalOpen(false)}>Close</button></p>
