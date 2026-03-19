@@ -24,6 +24,7 @@ type GridState = {
 }
 
 function App() {
+  const defaultGridState = {state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]};
   const [grid, setGrid] = useState<Grid | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [searchPeople, setSearchPeople] = useState<Person[]>([]);
@@ -31,14 +32,16 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentH, setCurrentH] = useState<number>(0);
   const [currentV, setCurrentV] = useState<number>(0);
-  const [gridState, setGridState] = useState<GridState>({state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]})
+  const [gridState, setGridState] = useState<GridState>(defaultGridState)
   const [guessesRemaining, setGuessesRemaining] = useState<number>(12);
   const [showSolutions, setShowSolutions] = useState<boolean>(false);
   const closeModal = () => setModalOpen(false);
   const [solutionsDialog, setSolutionsDialog] = useState<boolean>(false);
   const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
 
-  useEffect(() => {loadGridFromApi()}, [])
+  useEffect(() => {handleStartup()}, [])
+
+  useEffect(() => {saveStateToLocalStorage()}, [grid, gridState, guessesRemaining])
 
   useEffect(() => {
     if (searchTerm === "") return;
@@ -46,13 +49,49 @@ function App() {
     return () => clearTimeout(delayDebounceFn)
   }, [searchTerm])
 
-  const loadGridFromApi = function () {
-    fetch('https://grid.shab.waw.pl/api/get_grid').then((result) => {result.json().then((json) => setGrid(json))});
+  const loadGridFromApi = async function () {
+    let result = await fetch('https://grid.shab.waw.pl/api/get_grid');
+    let json = await result.json();
+    setGrid(json);
+    console.log('setting grid')
+    console.log(json)
+  }
+
+  const handleStartup = function () {
+    loadFromLocalStorage();
   }
 
   const loadPeopleFromApi = function () {
-    setSearchLoading(true);
-    fetch(`https://www.worldcubeassociation.org/api/v0/search/users?q=${searchTerm}&persons_table=true`).then((result) => {result.json().then((json) => {setSearchLoading(false); setSearchPeople(json.result)})});
+    setSearchLoading(true);fetch(`https://www.worldcubeassociation.org/api/v0/search/users?q=${searchTerm}&persons_table=true`).then((result) => {result.json().then((json) => {setSearchLoading(false); setSearchPeople(json.result)})});
+  }
+
+  const saveStateToLocalStorage = function () {
+    console.log('saving grid')
+    console.log(grid)
+    if (grid === null) return;
+    localStorage.setItem("grid", JSON.stringify(grid))
+    localStorage.setItem("gridState", JSON.stringify(gridState))
+    localStorage.setItem("guessesRemaining", guessesRemaining.toString())
+  }
+
+  const loadFromLocalStorage = function () {
+    let gridStr = localStorage.getItem("grid");
+    if(gridStr === null){
+      setGrid(null)
+      loadGridFromApi();
+      return;
+    }else{
+      setGrid(JSON.parse(gridStr))
+    }
+    setGridState(JSON.parse(localStorage.getItem("gridState") ?? JSON.stringify(defaultGridState)))
+    let guessesStr = localStorage.getItem("guessesRemaining");
+    if (guessesStr == null || isNaN(Number(guessesStr))){
+      setGuessesRemaining(12);
+    }else {
+      setGuessesRemaining(Number(guessesStr))
+    }
+
+    setGuessesRemaining(localStorage.getItem("guessesRemaining") as unknown as number)
   }
 
   const toastPlaceholder = function () {
@@ -113,16 +152,19 @@ function App() {
     if(!grid.v_people[currentV].includes(wca_id))
     {
       toastWrongGuess();
+      saveStateToLocalStorage();
       return;
     }
     if(!grid.h_people[currentH].includes(wca_id))
     {
       toastWrongGuess();
+      saveStateToLocalStorage();
       return;
     }
     let newGridState = gridState;
     newGridState.state[currentH][currentV].state = person;
     setGridState(newGridState);
+    saveStateToLocalStorage();
   }
 
   const getGridTile = function(h: number, v: number) { 
