@@ -232,8 +232,8 @@ function App() {
           <DialogPanel className="dialog-panel">
             <input className="search-input" type="text" autoFocus onChange={(e) => setSearchTerm(e.target.value)}></input>
             {searchLoading && <p>loading...</p>}
-            <div className="solutions-scrollable">
-            {searchPeople.map((person, i) => <p key={i} onClick={() => {handleGuess(person); closeModal(); setSearchPeople([])}}>{person.name} {person.wca_id}</p>)}
+            <div className="people-scrollable">
+            {searchPeople.map((person, i) => <div className="person-search-display" key={i} onClick={() => {handleGuess(person); closeModal(); setSearchPeople([])}}><div className="avatar-container"><img className="image-tiny" src={person.avatar.thumb_url}></img></div>{person.name} {person.wca_id}</div>)}
             </div>
             <p><button onClick={() => setModalOpen(false)}>Close</button></p>
           </DialogPanel>
