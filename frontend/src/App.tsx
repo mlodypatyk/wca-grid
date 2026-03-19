@@ -6,6 +6,7 @@ import type { Person } from './wca_types'
 import { Bounce, ToastContainer, toast } from 'react-toastify'
 import { Share } from '@boxicons/react'
 import { getNameFromId } from './eventNames'
+import { shuffleArray } from './shuffleArray'
 
 
 type Grid = {
@@ -90,8 +91,78 @@ function App() {
     setGuessesRemaining(localStorage.getItem("guessesRemaining") as unknown as number)
   }
 
-  const toastPlaceholder = function () {
-    toast('this is not ready😋😋😋😋')
+  const handleShare = function () {
+    if(grid == null) return;
+    let finalText = ''
+    let emojis = ['🦆', '🦄', '🐷', '🐤', '🦞', '🐯', '🐘', '🐍', '🐝', '🐳']
+    let okay = '✅'
+    let wrong = '❌'
+    shuffleArray(emojis);
+    if(gameState() == "win"){
+      finalText += `${guessesRemaining} guesses remaining\n`
+    }
+
+    finalText += '⬛'
+    for(let i=0;i<3;i++){
+      finalText+=emojis[i];
+    }
+    finalText += '\n'
+    for(let i=0;i<3;i++){
+      finalText += emojis[i+3];
+      for(let j=0;j<3;j++){
+        if(gridState.state[i][j].state == null){
+          finalText += wrong;
+        }else{
+          finalText += okay;
+        }
+      }
+      finalText += '\n'
+    }
+    finalText += '\n';
+    for(let i=0;i<3;i++){
+      finalText += emojis[i];
+      finalText += ': '
+      finalText += getReadableCategoryName(grid.v[i])
+      finalText += '\n'
+    }
+    for(let i=0;i<3;i++){
+      finalText += emojis[i+3];
+      finalText += ': '
+      finalText += getReadableCategoryName(grid.h[i])
+      finalText += '\n'
+    }
+
+    finalText += 'Try your skills at: https://grid.shab.waw.pl\n'
+    navigator.clipboard.writeText(finalText).then(()=>{toastCopiedSuccess()}, () => {toastCopiedFailed()})
+
+  }
+
+  const toastCopiedSuccess = function () {
+    toast.success('Copied to clipboard!', {
+      position: "top-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "colored",
+      transition: Bounce,
+    });
+  }
+
+  const toastCopiedFailed = function (){
+    toast.error('Failed to copy.', {
+      position: "top-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "colored",
+      transition: Bounce,
+      });
   }
 
   const toastWrongGuess = function () {
@@ -279,12 +350,12 @@ function App() {
       {gameState() == "win" && <div className="result-box win">
         <p className="result-box-text">You won! With {guessesRemaining} {guessesRemaining == 1 ? "guess" : "guesses"} remaining. </p>
         <p>Share your result!</p>
-        <button className="shareButton" onClick={toastPlaceholder}><span className="buttonText">Share</span> <Share /></button>
+        <button className="shareButton" onClick={handleShare}><span className="buttonText">Share</span> <Share /></button>
       </div>}
       {gameState() == "lose" && <div className="result-box lose">
         <p className="result-box-text">You lost 😞</p>
         <p>Share your result!</p>
-        <button className="shareButton" onClick={toastPlaceholder}><span className="buttonText">Share</span> <Share /></button>
+        <button className="shareButton" onClick={handleShare}><span className="buttonText">Share</span> <Share /></button>
       </div>}
       {gameState() != "ongoing" && <p><button onClick={() => setShowSolutions(!showSolutions)}>{showSolutions ? 'Hide solutions' : 'Show solutions'}</button><button className="resetButton" onClick={handleNewGameClick}>New game</button></p>}
     </div>}
