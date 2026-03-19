@@ -53,8 +53,6 @@ function App() {
     let result = await fetch('https://grid.shab.waw.pl/api/get_grid');
     let json = await result.json();
     setGrid(json);
-    console.log('setting grid')
-    console.log(json)
   }
 
   const handleStartup = function () {
@@ -66,8 +64,6 @@ function App() {
   }
 
   const saveStateToLocalStorage = function () {
-    console.log('saving grid')
-    console.log(grid)
     if (grid === null) return;
     localStorage.setItem("grid", JSON.stringify(grid))
     localStorage.setItem("gridState", JSON.stringify(gridState))
@@ -128,7 +124,6 @@ function App() {
   }
 
   const handleClick = function (h: number, v: number) {
-    console.log(`h: ${h}, v: ${v}`)
     if(gridState.state[h][v].state != null) return;
     if(guessesRemaining == 0) return;
     setCurrentH(h);
