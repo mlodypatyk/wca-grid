@@ -24,6 +24,10 @@ type GridState = {
   state: TileState[][];
 }
 
+type PersonsApiResponse = {
+  person: Person
+}
+
 function App() {
   const defaultGridState = {state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]};
   const [grid, setGrid] = useState<Grid | null>(null);
@@ -39,10 +43,13 @@ function App() {
   const closeModal = () => setModalOpen(false);
   const [solutionsDialog, setSolutionsDialog] = useState<boolean>(false);
   const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
+  const [peopleData, setPeopleData] = useState<Map<string, Person>>(new Map<string, Person> );
 
   useEffect(() => {handleStartup()}, [])
 
   useEffect(() => {saveStateToLocalStorage()}, [grid, gridState, guessesRemaining])
+
+  useEffect(()=> {loadSolutionsPersonData()}, [grid])
 
   useEffect(() => {
     if (searchTerm === "") return;
@@ -50,9 +57,11 @@ function App() {
     return () => clearTimeout(delayDebounceFn)
   }, [searchTerm])
 
+  const wcaIconUrl = 'https://assets.worldcubeassociation.org/assets/2137bf1/packs/static/components/StaticPages/LogoImages/1%20Positive%20Primary/WCA%20Logo-11f76952edde63e7601d.svg'
+
   const loadGridFromApi = async function () {
     let result = await fetch('https://grid.shab.waw.pl/api/get_grid');
-    let json = await result.json();
+    let json: Grid = await result.json();
     setGrid(json);
   }
 
@@ -61,7 +70,38 @@ function App() {
   }
 
   const loadPeopleFromApi = function () {
-    setSearchLoading(true);fetch(`https://www.worldcubeassociation.org/api/v0/search/users?q=${searchTerm}&persons_table=true`).then((result) => {result.json().then((json) => {setSearchLoading(false); setSearchPeople(json.result)})});
+    setSearchLoading(true);
+    fetch(`https://www.worldcubeassociation.org/api/v0/search/users?q=${searchTerm}&persons_table=true`).then((result) => {result.json().then((json) => {setSearchLoading(false); setSearchPeople(json.result)})});
+  }
+
+  const loadSolutionsPersonData = async function () {
+    if(grid==null) return;
+    let wca_ids_set = new Set<String>();
+    for(let i=0;i<3;i++){
+      for(let j=0;j<3;j++){
+        const solutions = grid.h_people[i].filter((value) => grid.v_people[j].includes(value))
+        console.log(solutions)
+        solutions.map((wca_id) => {wca_ids_set.add(wca_id)});
+      }
+    }
+    let wca_ids = Array.from(wca_ids_set.values())
+    console.log(wca_ids)
+    let handledIds = 0;
+    let personData = new Map<string, Person>();
+    while(handledIds < wca_ids.length){
+      let range_end = handledIds + 20;
+      if(range_end > wca_ids.length){
+        console.log('greater', wca_ids.length, range_end)
+        range_end = wca_ids.length;
+      }
+      let idsToRequest = wca_ids.slice(handledIds, range_end)
+      let response = await fetch(`https://www.worldcubeassociation.org/api/v0/persons?wca_ids=${idsToRequest.join(',')}`)
+      let people: Array<PersonsApiResponse> = await response.json();
+      people.map((person) => {personData.set(person.person.wca_id, person.person)})
+      console.log(handledIds, range_end)
+      handledIds = range_end
+    }
+    setPeopleData(personData);
   }
 
   const saveStateToLocalStorage = function () {
@@ -315,7 +355,10 @@ function App() {
           <div className="dialog-container">
             <DialogPanel className="dialog-panel">
             <div className="solutions-scrollable">
-              {solutionsPeople.map((person, i) => <p key={i}><a href={`https://www.worldcubeassociation.org/persons/${person}`} target="_blank">{person}</a></p>)}
+              {solutionsPeople.map((person, i) => <div className="person-search-display" key={i}>
+                <div className="avatar-container"><img className="image-tiny" src={peopleData.has(person) ? peopleData.get(person)!.avatar.thumb_url: wcaIconUrl}></img></div>
+                <a href={`https://www.worldcubeassociation.org/persons/${person}`} target="_blank">{peopleData.has(person) ? peopleData.get(person)!.name : person}</a>
+                </div>)}
             </div>
             <p><button onClick={() => setSolutionsDialog(false)}>Close</button></p>
             </DialogPanel>
