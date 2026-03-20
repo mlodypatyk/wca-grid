@@ -347,7 +347,7 @@ function App() {
           <div className="grid-square" onClick={() => handleClick(2, 2)}>{getGridTile(2, 2)}</div>
         </div>
       </div>
-      {guessesRemaining != 0 && <div className="ff-button-container"><button className="ff-button" onClick={()=>{setGuessesRemaining(0)}}>Give up</button></div>}
+      {gameState() == "ongoing" && <div className="ff-button-container"><button className="ff-button" onClick={()=>{setGuessesRemaining(0)}}>Give up</button></div>}
       {gameState() == "win" && <div className="result-box win">
         <p className="result-box-text">You won! With {guessesRemaining} {guessesRemaining == 1 ? "guess" : "guesses"} remaining. </p>
         <p>Share your result!</p>
