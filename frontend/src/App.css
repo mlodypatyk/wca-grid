@@ -113,6 +113,13 @@
     align-items: center;
     display: grid;
 }
+.ff-button-container {
+    padding-top: 1em;
+}
+
+button.ff-button {
+    background-color: indianred;
+}
 @media (max-width:480px) {
   .grid-square {
     width: 20vw;
