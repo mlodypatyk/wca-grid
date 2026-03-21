@@ -120,7 +120,26 @@
 button.ff-button {
     background-color: indianred;
 }
+.info-container {
+    width: 40em;
+    display: flex;
+    align-items: end;
+    flex-direction: column;
+}
+
+.guess-info {
+    display: inline;
+    align-self: center;
+}
+
+.info-circle {
+    display: inline;
+    align-self: end;
+}
 @media (max-width:480px) {
+  .info-container {
+    width: 90vw;
+  }
   .grid-square {
     width: 20vw;
     height: 20vw;

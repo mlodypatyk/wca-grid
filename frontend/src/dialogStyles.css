@@ -36,6 +36,16 @@
   max-height: 65vh;
   overflow-y: auto;
 }
+.info-scrollable {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+.info-description {
+    text-align: left;
+}
+.info-header {
+    padding-top: 2em;
+}
 .image-tiny {
     max-height: 2.5em;
     max-width: 2.5em;

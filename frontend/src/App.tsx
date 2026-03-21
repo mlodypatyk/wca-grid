@@ -4,7 +4,7 @@ import './App.css'
 import { Dialog, DialogPanel } from '@headlessui/react'
 import type { Person } from './wca_types'
 import { Bounce, ToastContainer, toast } from 'react-toastify'
-import { Share } from '@boxicons/react'
+import { Share, InfoCircle } from '@boxicons/react'
 import { getNameFromId } from './eventNames'
 import { shuffleArray } from './shuffleArray'
 
@@ -43,7 +43,8 @@ function App() {
   const closeModal = () => setModalOpen(false);
   const [solutionsDialog, setSolutionsDialog] = useState<boolean>(false);
   const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
-  const [peopleData, setPeopleData] = useState<Map<string, Person>>(new Map<string, Person> );
+  const [peopleData, setPeopleData] = useState<Map<string, Person>>(new Map<string, Person>);
+  const [showInfo, setShowInfo] = useState<boolean>(false);
 
   useEffect(() => {handleStartup()}, [])
 
@@ -332,7 +333,6 @@ function App() {
       {grid == null  ? <p>loading...</p> : 
     <div>
       <ToastContainer />
-      <div className="guessInfo">Guesses remaining: {guessesRemaining}</div>
       <Dialog open={modalOpen} onClose={closeModal} className="dialog-wrapper">
           <div className="dialog-backdrop" />
           <div className="dialog-container">
@@ -360,6 +360,25 @@ function App() {
             </DialogPanel>
           </div>
       </Dialog>
+      <Dialog open={showInfo} onClose={()=>{setShowInfo(false)}} className="dialog-wrapper">
+      <div className="dialog-backdrop" />
+          <div className="dialog-container">
+            <DialogPanel className="dialog-panel">
+            <div className="info-scrollable">
+              <p className="info-header"><b>How to play?</b></p>
+              <p className="info-description">For each square, guess a person that fulfills both the vertical and horizontal criteria. Once you guess someone, you cannot reuse them for the entire grid.</p>
+              <p className="info-header"><b>Categories</b></p>
+              <p className="info-description"><b>Event sub-X: </b>all people who are subX in an event, average for all sighted events, and single for all blind events.</p>
+              <p className="info-description"><b>World championship podium: </b>all people who podiumed at any world championship</p>
+              <p className="info-description"><b>Continental championship podium: </b>all people from said continent who have a continental title (e.g., Patrick Ponce does not count for Europe, despite coming first in 3x3 at Euroes 2022).</p>
+              <p className="info-description"><b>X+ comps:</b> people who went to more than X comps</p>
+              <p className="info-header"><b>Data ownership disclaimer</b></p>
+              <p className="info-description"> This information is based on competition results owned and maintained by the World Cube Assocation, published at https://worldcubeassociation.org/results as of March 21, 2026.</p>
+              </div>
+            </DialogPanel>
+          </div>
+      </Dialog>
+      <div className="info-container"><div className="guess-info">Guesses remaining: {guessesRemaining}</div><div className="info-circle" onClick={() => {setShowInfo(true)}}><InfoCircle/></div></div>
       <div className = "grid">
         <div className="grid-row">
           <div className="grid-square"></div>
