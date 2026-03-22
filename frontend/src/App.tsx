@@ -30,6 +30,7 @@ type PersonsApiResponse = {
 
 function App() {
   const defaultGridState = {state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]};
+  const backendUrl = console.log(import.meta.env.VITE_BACKEND_URL)
   const [grid, setGrid] = useState<Grid | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [searchPeople, setSearchPeople] = useState<Person[]>([]);
@@ -61,7 +62,7 @@ function App() {
   const noProfileIcon = 'https://assets.worldcubeassociation.org/assets/2137bf1/assets/missing_avatar_thumb-d77f478a307a91a9d4a083ad197012a391d5410f6dd26cb0b0e3118a5de71438.png'
 
   const loadGridFromApi = async function () {
-    let result = await fetch('https://grid.shab.waw.pl/api/get_grid');
+    let result = await fetch(backendUrl + '/api/get_grid');
     let json: Grid = await result.json();
     setGrid(json);
   }
