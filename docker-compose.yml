@@ -6,3 +6,23 @@ services:
     volumes:
       - ./flask:/app
     command: python -m flask run --host=0.0.0.0 --port=5000
+    environment:
+      - DATABASE_URL=postgresql://wca:wcapass@db:5432/wcadata
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: wca
+      POSTGRES_PASSWORD: wcapass
+      POSTGRES_DB: wcadata
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./init-schema:/docker-entrypoint-initdb.d
+
+volumes:
+  db_data: {}
+
+  

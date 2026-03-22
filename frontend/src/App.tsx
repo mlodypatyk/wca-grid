@@ -67,6 +67,14 @@ function App() {
     setGrid(json);
   }
 
+  const handleGuessRequest = async function (wca_id: string, cat1: string, cat2: string) {
+    const params = new URLSearchParams();
+    params.append('wca_id', wca_id)
+    params.append('cat1', cat1)
+    params.append('cat2', cat2)
+    fetch(backendUrl + `/api/record_guess?${params}`)
+  }
+
   const handleStartup = function () {
     loadFromLocalStorage();
   }
@@ -268,6 +276,7 @@ function App() {
     let newGridState = gridState;
     newGridState.state[currentH][currentV].state = person;
     setGridState(newGridState);
+    handleGuessRequest(person.wca_id, grid.h[currentH], grid.v[currentV])
     saveStateToLocalStorage();
   }
 

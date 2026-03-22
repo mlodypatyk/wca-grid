@@ -1,7 +1,11 @@
 import pickle
 import random
-from flask import Flask, jsonify
+import re
+import os
+import psycopg2
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+from dotenv import load_dotenv
 
 def generate_grid(categories, data):
     weights = {
@@ -89,6 +93,71 @@ def get_grid():
         'v_people': [list(data[v[0]]), list(data[v[1]]), list(data[v[2]])],
         'h_people': [list(data[h[0]]), list(data[h[1]]), list(data[h[2]])],
     })
+
+@app.route('/api/record_guess')
+def record_guess():
+    data = pickle.load(open('data.pickle', 'rb'))
+    categories = list(data.keys())
+    wca_id = request.args.get('wca_id')
+    if re.fullmatch("\d{4}[A-Z]{4}\d{2}", wca_id) is None:
+        return []
+    cat1 = request.args.get('cat1')
+    cat2 = request.args.get('cat2')
+    if cat1 not in categories:
+        return []
+    if cat2 not in categories:
+        return []
+    
+    if cat1 > cat2: #flip them so they are in the same order in the db always
+        cat1, cat2 = cat2, cat1
+
+    possible_people = data[cat1].intersection(data[cat2])
+    if wca_id not in possible_people:
+        return []
+    
+    guess_hits = 0
+    guess_showings = 0
+    cursor = mydb.cursor()
+    for person_id in possible_people:
+        query = f"select * from answer_frequencies where wca_id='{person_id}' and cat1='{cat1}' and cat2='{cat2}'"
+        cursor.execute(query)
+        results = cursor.fetchall()
+        if len(results) == 0:
+            showings = 1
+            hits = 0 
+            if person_id == wca_id:
+                hits += 1
+                guess_hits = hits
+                guess_showings = showings
+            print(person_id, wca_id)
+            cursor.execute(f"insert into answer_frequencies (wca_id, cat1, cat2, hits, showings) values ('{person_id}', '{cat1}', '{cat2}', {hits}, {showings})")
+        elif len(results) == 1:
+            _, _, _, _, hits, showings = results[0]
+            showings += 1
+            if person_id == wca_id:
+                hits += 1
+                guess_hits = hits
+                guess_showings = showings
+            cursor.execute(f"update answer_frequencies set showings={showings}, hits={hits} where wca_id='{person_id}' and cat1='{cat1}' and cat2='{cat2}'")
+        else:
+            pass # panic
+    mydb.commit()
+    return {'hits': guess_hits, 'showings': guess_showings}
+
+load_dotenv()
+host = os.getenv('POSTGRES_HOST', 'localhost')
+port = int(os.getenv('POSTGRES_PORT', '5432'))
+user = os.getenv('POSTGRES_USER', 'user')
+password = os.getenv('POSTGRES_PASS', '')
+database = os.getenv('POSTGRES_DB', 'db')
+
+mydb = psycopg2.connect(
+    host=host,
+    user=user,
+    password=password,
+    database=database,
+    port=port
+)
 
 if __name__ == '__main__':
     app.run()
