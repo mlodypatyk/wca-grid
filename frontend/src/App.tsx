@@ -30,7 +30,7 @@ type PersonsApiResponse = {
 
 function App() {
   const defaultGridState = {state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]};
-  const backendUrl = console.log(import.meta.env.VITE_BACKEND_URL)
+  const backendUrl = import.meta.env.VITE_BACKEND_URL
   const [grid, setGrid] = useState<Grid | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [searchPeople, setSearchPeople] = useState<Person[]>([]);
