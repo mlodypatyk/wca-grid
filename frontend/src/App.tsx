@@ -8,7 +8,7 @@ import { InfoCircle } from '@boxicons/react'
 import { getTodayString, parseDate, toDateString } from './lib/dates'
 import { makeDefaultGridState } from './lib/gridState'
 import { getInitialDailyState, saveStateToLocalStorage } from './lib/storage'
-import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadSolutionsPersonData, recordGuess, searchUsers, type LoadedState } from './lib/api'
+import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadSeededGrid, loadSolutionsPersonData, recordGuess, saveSeededGrid, searchUsers, type LoadedState } from './lib/api'
 import { buildShareText, type GameState } from './lib/share'
 import { toastAlreadyGuessed, toastCopiedFailed, toastCopiedSuccess, toastWrongGuess } from './lib/toasts'
 import GridBoard from './components/GridBoard'
@@ -51,6 +51,7 @@ function App() {
   const [showInfo, setShowInfo] = useState<boolean>(false);
   const [mode, setMode] = useState<'daily' | 'free' | 'previous'>('daily');
   const [currentDate, setCurrentDate] = useState<string>(getTodayString);
+  const [seed, setSeed] = useState<string | null>(null);
 
   const modeRef = useRef(mode);
   const currentDateRef = useRef(currentDate);
@@ -61,6 +62,7 @@ function App() {
     setGrid(loaded.grid);
     setGridState(loaded.gridState);
     setGuessesRemaining(loaded.guessesRemaining);
+    if (loaded.grid.seed != null) setSeed(loaded.grid.seed);
   }
 
   const switchMode = function (newMode: 'daily' | 'free' | 'previous') {
@@ -102,8 +104,16 @@ function App() {
 
   const handleShare = function () {
     if(grid == null) return;
+    if (mode === 'free' && seed) {
+      saveSeededGrid(backendUrl, seed);
+    }
     const finalText = buildShareText(mode, grid, gridState, guessesRemaining, gameState());
     navigator.clipboard.writeText(finalText).then(() => { toastCopiedSuccess() }, () => { toastCopiedFailed() })
+  }
+
+  const handleCopyLink = function () {
+    if (seed == null) return;
+    navigator.clipboard.writeText(window.location.origin + '/?seed=' + seed).then(() => { toastCopiedSuccess() }, () => { toastCopiedFailed() })
   }
 
   const handleClick = function (h: number, v: number) {
@@ -141,7 +151,7 @@ function App() {
   }
 
   const handleNewGameClick = function () {
-    loadGridFromApi(backendUrl).then(setGrid);
+    loadGridFromApi(backendUrl).then((json) => { setGrid(json); setSeed(json.seed ?? null); });
     setGridState(makeDefaultGridState())
     setGuessesRemaining(12);
     setShowSolutions(false);
@@ -160,7 +170,21 @@ function App() {
   useEffect(() => { modeRef.current = mode }, [mode])
   useEffect(() => { currentDateRef.current = currentDate }, [currentDate])
   useEffect(() => {
+    const seedParam = new URLSearchParams(window.location.search).get('seed');
+    if (seedParam == null) return;
+    loadSeededGrid(backendUrl, seedParam).then((loaded) => {
+      applyLoadedState(loaded);
+      setSeed(seedParam);
+      setMode('free');
+      const params = new URLSearchParams(window.location.search);
+      params.delete('seed');
+      const query = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
+    });
+  }, [])
+  useEffect(() => {
     if (grid !== null) return;
+    if (new URLSearchParams(window.location.search).get('seed') != null) return;
     loadDailyGrid(backendUrl, currentDate).then(applyLoadedState);
   }, [])
   useEffect(() => {
@@ -214,6 +238,7 @@ function App() {
         showSolutions={showSolutions}
         onTileClick={handleClick}
         onShowSolutionsClick={(solutions) => { setSolutionsPeople(solutions); setSolutionsDialog(true) }}
+        onCopyLink={handleCopyLink}
       />
       <ResultBox
         gameState={gameState()}

@@ -2,6 +2,7 @@ import pickle
 import random
 import re
 import os
+import secrets
 import psycopg2
 from datetime import datetime, timezone, date
 from flask import Flask, jsonify, request
@@ -10,6 +11,9 @@ from dotenv import load_dotenv
 from psycopg2.extras import Json
 
 REFERENCE_DATE = date(2026, 3, 21)
+
+def new_seed():
+    return secrets.token_urlsafe(8)
 
 def generate_grid(categories, data, rng):
     weights = {
@@ -94,15 +98,62 @@ def build_squares(v, h, data):
         for h_i in h
     ]
 
+def build_grid(seed):
+    rng = random.Random(seed)
+    v, h = generate_grid(categories, data, rng)
+    squares = build_squares(v, h, data)
+    return v, h, squares
+
 @app.route('/api/get_grid')
 def get_grid():
-    v, h = generate_grid(categories, data, random.Random())
-    squares = build_squares(v, h, data)
+    seed = new_seed()
+    v, h, squares = build_grid(seed)
     return jsonify({
         'v': v,
         'h': h,
         'squares': squares,
+        'seed': seed,
     })
+
+@app.route('/api/get_seeded_grid')
+def get_seeded_grid():
+    seed = request.args.get('seed', '')
+    if re.fullmatch(r"[A-Za-z0-9_-]{5,32}", seed) is None:
+        return jsonify({'error': 'invalid seed'}), 400
+
+    cursor = mydb.cursor()
+    cursor.execute(
+        "select vertical_categories, horizontal_categories, squares from seeded_puzzles where seed = %s",
+        (seed,)
+    )
+    row = cursor.fetchone()
+
+    if row is not None:
+        v, h, squares = row
+    else:
+        v, h, squares = build_grid(seed)
+
+    return jsonify({
+        'v': v,
+        'h': h,
+        'squares': squares,
+        'seed': seed,
+    })
+
+@app.route('/api/save_seeded_grid', methods=['POST'])
+def save_seeded_grid():
+    seed = request.args.get('seed', '')
+    if re.fullmatch(r"[A-Za-z0-9_-]{5,32}", seed) is None:
+        return jsonify({'error': 'invalid seed'}), 400
+
+    v, h, squares = build_grid(seed)
+    cursor = mydb.cursor()
+    cursor.execute(
+        "insert into seeded_puzzles (seed, vertical_categories, horizontal_categories, squares) values (%s, %s, %s, %s) on conflict (seed) do nothing",
+        (seed, v, h, Json(squares))
+    )
+    mydb.commit()
+    return jsonify({'ok': True})
 
 @app.route('/api/get_daily_grid')
 def get_daily_grid():

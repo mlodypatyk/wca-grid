@@ -6,6 +6,7 @@ export type Grid = {
   squares: string[][][],
   date?: string,
   number?: number,
+  seed?: string,
 }
 
 export type TileState = {

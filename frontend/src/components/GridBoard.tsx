@@ -7,6 +7,7 @@ type Props = {
   showSolutions: boolean
   onTileClick: (h: number, v: number) => void
   onShowSolutionsClick: (solutions: string[]) => void
+  onCopyLink: () => void
 }
 
 const getGridTile = function (grid: Grid, gridState: GridState, showSolutions: boolean, onShowSolutionsClick: (solutions: string[]) => void, h: number, v: number) {
@@ -19,11 +20,14 @@ const getGridTile = function (grid: Grid, gridState: GridState, showSolutions: b
   return <div className="person-display"><img src={person.avatar.thumb_url}></img><p className="name-tag">{person.name}</p></div>
 }
 
-export default function GridBoard({ grid, gridState, showSolutions, onTileClick, onShowSolutionsClick }: Props) {
+export default function GridBoard({ grid, gridState, showSolutions, onTileClick, onShowSolutionsClick, onCopyLink }: Props) {
   return (
     <div className="grid">
       <div className="grid-row">
-        <div className="grid-square"></div>
+        <div className="grid-square">
+          {grid.number != null && <p className="grid-content">Daily #{grid.number}</p>}
+          {grid.seed != null && <button className="copyLinkButton grid-content" onClick={onCopyLink}>Copy link</button>}
+        </div>
         <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[0])}</p></div>
         <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[1])}</p></div>
         <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[2])}</p></div>

@@ -20,6 +20,16 @@ export const loadDailyGrid = async function (backendUrl: string, date: string): 
   return { grid: json, gridState: makeDefaultGridState(), guessesRemaining: 12 };
 }
 
+export const loadSeededGrid = async function (backendUrl: string, seed: string): Promise<LoadedState> {
+  const result = await fetch(`${backendUrl}/api/get_seeded_grid?seed=${seed}`);
+  const json: Grid = await result.json();
+  return { grid: json, gridState: makeDefaultGridState(), guessesRemaining: 12 };
+}
+
+export const saveSeededGrid = function (backendUrl: string, seed: string) {
+  fetch(`${backendUrl}/api/save_seeded_grid?seed=${seed}`, { method: 'POST' })
+}
+
 export const loadFreeGrid = async function (backendUrl: string): Promise<LoadedState> {
   const savedGrid = localStorage.getItem("free_grid");
   if (savedGrid !== null) {
