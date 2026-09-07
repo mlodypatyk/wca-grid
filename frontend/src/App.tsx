@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './DialogStyles.css'
 import './App.css'
 import { Dialog, DialogPanel } from '@headlessui/react'
@@ -12,12 +12,14 @@ import { shuffleArray } from './shuffleArray'
 type Grid = {
   h: string[],
   v: string[],
-  v_people: string[][],
-  h_people: string[][]
+  squares: string[][][],
+  date?: string,
+  number?: number,
 }
 
 type TileState = {
   state : Person | null;
+  guessRating: number | null;
 }
 
 type GridState = {
@@ -28,43 +30,91 @@ type PersonsApiResponse = {
   person: Person
 }
 
+const makeDefaultGridState = (): GridState => ({
+  state: [
+    [{state: null, guessRating: null}, {state: null, guessRating: null}, {state: null, guessRating: null}],
+    [{state: null, guessRating: null}, {state: null, guessRating: null}, {state: null, guessRating: null}],
+    [{state: null, guessRating: null}, {state: null, guessRating: null}, {state: null, guessRating: null}],
+  ]
+})
+
+const toDateString = (d: Date): string => {
+  const offset = d.getTimezoneOffset();
+  return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
+}
+
+const getTodayString = (): string => toDateString(new Date())
+
+const parseDate = (s: string): Date => {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+const getInitialDailyState = (): { grid: Grid; gridState: GridState; guessesRemaining: number } | null => {
+  const saved = localStorage.getItem(`daily_state_${getTodayString()}`);
+  return saved !== null ? JSON.parse(saved) : null;
+}
+
 function App() {
-  const defaultGridState = {state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]};
   const backendUrl = import.meta.env.VITE_BACKEND_URL
-  const [grid, setGrid] = useState<Grid | null>(null);
+  const [grid, setGrid] = useState<Grid | null>(() => getInitialDailyState()?.grid ?? null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [searchPeople, setSearchPeople] = useState<Person[]>([]);
   const [searchLoading, setSearchLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentH, setCurrentH] = useState<number>(0);
   const [currentV, setCurrentV] = useState<number>(0);
-  const [gridState, setGridState] = useState<GridState>(defaultGridState)
-  const [guessesRemaining, setGuessesRemaining] = useState<number>(12);
+  const [gridState, setGridState] = useState<GridState>(() => getInitialDailyState()?.gridState ?? makeDefaultGridState())
+  const [guessesRemaining, setGuessesRemaining] = useState<number>(() => getInitialDailyState()?.guessesRemaining ?? 12);
   const [showSolutions, setShowSolutions] = useState<boolean>(false);
   const closeModal = () => setModalOpen(false);
   const [solutionsDialog, setSolutionsDialog] = useState<boolean>(false);
   const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
   const [peopleData, setPeopleData] = useState<Map<string, Person>>(new Map<string, Person>);
   const [showInfo, setShowInfo] = useState<boolean>(false);
+  const [mode, setMode] = useState<'daily' | 'free'>('daily');
+  const [currentDate, setCurrentDate] = useState<string>(getTodayString);
 
-  useEffect(() => {handleStartup()}, [])
-
-  useEffect(() => {saveStateToLocalStorage()}, [grid, gridState, guessesRemaining])
-
-  useEffect(()=> {loadSolutionsPersonData()}, [grid])
-
-  useEffect(() => {
-    if (searchTerm === "") return;
-    const delayDebounceFn = setTimeout(() => {loadPeopleFromApi()}, 1000)
-    return () => clearTimeout(delayDebounceFn)
-  }, [searchTerm])
+  const modeRef = useRef(mode);
+  const currentDateRef = useRef(currentDate);
 
   const noProfileIcon = 'https://assets.worldcubeassociation.org/assets/2137bf1/assets/missing_avatar_thumb-d77f478a307a91a9d4a083ad197012a391d5410f6dd26cb0b0e3118a5de71438.png'
 
   const loadGridFromApi = async function () {
-    let result = await fetch(backendUrl + '/api/get_grid');
-    let json: Grid = await result.json();
+    const result = await fetch(backendUrl + '/api/get_grid');
+    const json: Grid = await result.json();
     setGrid(json);
+  }
+
+  const loadDailyGrid = async function (date: string) {
+    const saved = localStorage.getItem(`daily_state_${date}`);
+    if (saved !== null) {
+      const parsed = JSON.parse(saved);
+      setGrid(parsed.grid);
+      setGridState(parsed.gridState);
+      setGuessesRemaining(parsed.guessesRemaining);
+      return;
+    }
+    const result = await fetch(`${backendUrl}/api/get_daily_grid?date=${date}`);
+    const json: Grid = await result.json();
+    setGrid(json);
+    setGridState(makeDefaultGridState());
+    setGuessesRemaining(12);
+  }
+
+  const loadFreeGrid = async function () {
+    const savedGrid = localStorage.getItem("free_grid");
+    if (savedGrid !== null) {
+      setGrid(JSON.parse(savedGrid));
+      const savedState = localStorage.getItem("free_gridState");
+      setGridState(JSON.parse(savedState ?? JSON.stringify(makeDefaultGridState())));
+      const savedGuesses = localStorage.getItem("free_guesses");
+      setGuessesRemaining(savedGuesses === null || isNaN(Number(savedGuesses)) ? 12 : Number(savedGuesses));
+      return;
+    }
+    await loadGridFromApi();
+    setGridState(makeDefaultGridState());
+    setGuessesRemaining(12);
   }
 
   const handleGuessRequest = async function (wca_id: string, cat1: string, cat2: string) {
@@ -75,110 +125,139 @@ function App() {
     fetch(backendUrl + `/api/record_guess?${params}`)
   }
 
-  const handleStartup = function () {
-    loadFromLocalStorage();
-  }
-
   const loadPeopleFromApi = function () {
     setSearchLoading(true);
     fetch(`https://www.worldcubeassociation.org/api/v0/search/users?q=${searchTerm}&persons_table=true`).then((result) => {result.json().then((json) => {setSearchLoading(false); setSearchPeople(json.result)})});
   }
 
-  const loadSolutionsPersonData = async function () {
+  const loadSolutionsPersonData = function () {
     if(grid==null) return;
-    let wca_ids_set = new Set<String>();
+    if(import.meta.env.DEV) return; // annoy wca servers a bit less
+    const wca_ids_set = new Set<string>();
     for(let i=0;i<3;i++){
       for(let j=0;j<3;j++){
-        const solutions = grid.h_people[i].filter((value) => grid.v_people[j].includes(value))
+        const solutions = grid.squares[i][j]
         solutions.map((wca_id) => {wca_ids_set.add(wca_id)});
       }
     }
-    let wca_ids = Array.from(wca_ids_set.values())
-    let handledIds = 0;
-    let personData = new Map<string, Person>();
-    while(handledIds < wca_ids.length){
+    const wca_ids = Array.from(wca_ids_set.values())
+    const personData = new Map<string, Person>();
+    const fetchChunk = function (handledIds: number): Promise<void> {
+      if (handledIds >= wca_ids.length) {
+        return Promise.resolve();
+      }
       let range_end = handledIds + 20;
       if(range_end > wca_ids.length){
         range_end = wca_ids.length;
       }
-      let idsToRequest = wca_ids.slice(handledIds, range_end)
-      let response = await fetch(`https://www.worldcubeassociation.org/api/v0/persons?wca_ids=${idsToRequest.join(',')}`)
-      let people: Array<PersonsApiResponse> = await response.json();
-      people.map((person) => {personData.set(person.person.wca_id, person.person)})
-      handledIds = range_end
-    }
-    setPeopleData(personData);
+      const idsToRequest = wca_ids.slice(handledIds, range_end)
+      return fetch(`https://www.worldcubeassociation.org/api/v0/persons?wca_ids=${idsToRequest.join(',')}`)
+        .then((response) => response.json())
+        .then((people: Array<PersonsApiResponse>) => {
+          people.map((person) => {personData.set(person.person.wca_id, person.person)})
+          return fetchChunk(handledIds + 20);
+        });
+    };
+    return fetchChunk(0).then(() => { setPeopleData(personData); });
   }
 
   const saveStateToLocalStorage = function () {
     if (grid === null) return;
-    localStorage.setItem("grid", JSON.stringify(grid))
-    localStorage.setItem("gridState", JSON.stringify(gridState))
-    localStorage.setItem("guessesRemaining", guessesRemaining.toString())
+    if (modeRef.current === 'daily') {
+      localStorage.setItem(`daily_state_${currentDateRef.current}`, JSON.stringify({ grid, gridState, guessesRemaining }));
+    } else {
+      localStorage.setItem("free_grid", JSON.stringify(grid))
+      localStorage.setItem("free_gridState", JSON.stringify(gridState))
+      localStorage.setItem("free_guesses", guessesRemaining.toString())
+    }
   }
 
-  const loadFromLocalStorage = function () {
-    let gridStr = localStorage.getItem("grid");
-    if(gridStr === null){
-      setGrid(null)
-      loadGridFromApi();
-      return;
-    }else{
-      setGrid(JSON.parse(gridStr))
+  const switchMode = function (newMode: 'daily' | 'free') {
+    if (newMode === mode) return;
+    setMode(newMode);
+    setShowSolutions(false);
+    setSearchTerm("");
+    setSearchPeople([]);
+    setModalOpen(false);
+    if (newMode === 'daily') {
+      loadDailyGrid(currentDateRef.current);
+    } else {
+      loadFreeGrid();
     }
-    setGridState(JSON.parse(localStorage.getItem("gridState") ?? JSON.stringify(defaultGridState)))
-    let guessesStr = localStorage.getItem("guessesRemaining");
-    if (guessesStr == null || isNaN(Number(guessesStr))){
-      setGuessesRemaining(12);
-    }else {
-      setGuessesRemaining(Number(guessesStr))
-    }
+  }
 
-    setGuessesRemaining(localStorage.getItem("guessesRemaining") as unknown as number)
+  const changeDate = function (newDate: string) {
+    if (newDate === currentDateRef.current) return;
+    setCurrentDate(newDate);
+    setShowSolutions(false);
+    loadDailyGrid(newDate);
+  }
+
+  const shiftDate = function (delta: number) {
+    const d = parseDate(currentDateRef.current);
+    d.setDate(d.getDate() + delta);
+    changeDate(toDateString(d));
   }
 
   const handleShare = function () {
     if(grid == null) return;
     let finalText = ''
-    let emojis = ['🦆', '🦄', '🐷', '🐤', '🦞', '🐯', '🐘', '🐍', '🐝', '🐳']
-    let okay = '✅'
-    let wrong = '❌'
-    shuffleArray(emojis);
-    if(gameState() == "win"){
-      finalText += `${guessesRemaining} guesses remaining\n`
-    }
-
-    finalText += '⬛'
-    for(let i=0;i<3;i++){
-      finalText+=emojis[i];
-    }
-    finalText += '\n'
-    for(let i=0;i<3;i++){
-      finalText += emojis[i+3];
-      for(let j=0;j<3;j++){
-        if(gridState.state[i][j].state == null){
-          finalText += wrong;
-        }else{
-          finalText += okay;
+    if (mode === 'daily') {
+      finalText += `Daily #${grid.number}\n`
+      if(gameState() == "win"){
+        finalText += `${guessesRemaining} guesses remaining\n`
+      }
+      for(let i=0;i<3;i++){
+        for(let j=0;j<3;j++){
+          if(gridState.state[i][j].state == null){
+            finalText += '❌';
+          }else{
+            finalText += '✅';
+          }
         }
+        finalText += '\n'
+      }
+      finalText += 'Try your skills at: https://grid.shab.waw.pl\n'
+    } else {
+      let emojis = ['🦆', '🦄', '🐷', '🐤', '🦞', '🐯', '🐘', '🐍', '🐝', '🐳']
+      let okay = '✅'
+      let wrong = '❌'
+      shuffleArray(emojis);
+      if(gameState() == "win"){
+        finalText += `${guessesRemaining} guesses remaining\n`
+      }
+
+      finalText += '⬛'
+      for(let i=0;i<3;i++){
+        finalText+=emojis[i];
       }
       finalText += '\n'
+      for(let i=0;i<3;i++){
+        finalText += emojis[i+3];
+        for(let j=0;j<3;j++){
+          if(gridState.state[i][j].state == null){
+            finalText += wrong;
+          }else{
+            finalText += okay;
+          }
+        }
+        finalText += '\n'
+      }
+      finalText += '\n';
+      for(let i=0;i<3;i++){
+        finalText += emojis[i];
+        finalText += ': '
+        finalText += getReadableCategoryName(grid.v[i])
+        finalText += '\n'
+      }
+      for(let i=0;i<3;i++){
+        finalText += emojis[i+3];
+        finalText += ': '
+        finalText += getReadableCategoryName(grid.h[i])
+        finalText += '\n'
+      }
+      finalText += 'Try your skills at: https://grid.shab.waw.pl\n'
     }
-    finalText += '\n';
-    for(let i=0;i<3;i++){
-      finalText += emojis[i];
-      finalText += ': '
-      finalText += getReadableCategoryName(grid.v[i])
-      finalText += '\n'
-    }
-    for(let i=0;i<3;i++){
-      finalText += emojis[i+3];
-      finalText += ': '
-      finalText += getReadableCategoryName(grid.h[i])
-      finalText += '\n'
-    }
-
-    finalText += 'Try your skills at: https://grid.shab.waw.pl\n'
     navigator.clipboard.writeText(finalText).then(()=>{toastCopiedSuccess()}, () => {toastCopiedFailed()})
 
   }
@@ -223,7 +302,7 @@ function App() {
       theme: "colored",
       transition: Bounce,
       });
-    
+
   }
 
   const toastAlreadyGuessed = function () {
@@ -249,11 +328,11 @@ function App() {
   }
 
   const handleGuess = function(person: Person) {
-    let wca_id = person.wca_id;
+    const wca_id = person.wca_id;
     if(grid == null) return;
     for(let i=0;i<3;i++){
       for(let j=0;j<3;j++){
-        let slot = gridState.state[i][j].state;
+        const slot = gridState.state[i][j].state;
         if(slot != null && slot.wca_id == person.wca_id){
           toastAlreadyGuessed();
           return;
@@ -261,30 +340,22 @@ function App() {
       }
     }
     setGuessesRemaining(guessesRemaining-1);
-    if(!grid.v_people[currentV].includes(wca_id))
+    if(!grid.squares[currentH][currentV].includes(wca_id))
     {
       toastWrongGuess();
-      saveStateToLocalStorage();
       return;
     }
-    if(!grid.h_people[currentH].includes(wca_id))
-    {
-      toastWrongGuess();
-      saveStateToLocalStorage();
-      return;
-    }
-    let newGridState = gridState;
+    const newGridState = { state: gridState.state.map(row => row.map(tile => ({ ...tile }))) };
     newGridState.state[currentH][currentV].state = person;
     setGridState(newGridState);
     handleGuessRequest(person.wca_id, grid.h[currentH], grid.v[currentV])
-    saveStateToLocalStorage();
   }
 
   const getGridTile = function(h: number, v: number) { 
-    let person = gridState.state[h][v].state
+    const person = gridState.state[h][v].state
     if(grid == null) return;
     if (showSolutions){
-      const solutions = grid.h_people[h].filter((value) => grid.v_people[v].includes(value))
+      const solutions = grid.squares[h][v]
       return <div className="solution-display" onClick={()=>{setSolutionsPeople(solutions); setSolutionsDialog(true)}}><p>Solutions: {solutions.length}</p></div>
     }
     if(person == null) return <div className="inner"></div>
@@ -295,7 +366,7 @@ function App() {
 
   const handleNewGameClick = function () {
     loadGridFromApi();
-    setGridState({state: [[{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}], [{state: null}, {state: null}, {state: null}]]})
+    setGridState(makeDefaultGridState())
     setGuessesRemaining(12);
     setShowSolutions(false);
   }
@@ -304,7 +375,7 @@ function App() {
     let isSolved = true;
     for(let i=0;i<3;i++){
       for(let j=0;j<3;j++){
-        let slot = gridState.state[i][j].state;
+        const slot = gridState.state[i][j].state;
         if(slot == null){
           isSolved = false;
         }
@@ -320,12 +391,15 @@ function App() {
   }
 
   const getReadableCategoryName = function(category: string) {
-    let catType = category.split(':')[0];
-    let catData = category.split(':')[1];
+    const catType = category.split(':')[0];
+    const catData = category.split(':')[1];
     if (catType == 'result'){
-      let event = catData.split(' ')[1];
-      let requirement = catData.split(' ')[2].substring(4)
+      const event = catData.split(' ')[1];
+      const requirement = catData.split(' ')[2].substring(4)
       return `${getNameFromId(event)} under ${parseFloat(requirement).toString()}${event == '333fm' ? ' moves' : 's'}`
+    }
+    if (catType == 'country') {
+      return `Represented ${catData}`
     }
     if (catType == 'cont_podium'){
       return `Continental championship podium: ${catData.substring(2)}`
@@ -338,6 +412,28 @@ function App() {
     }
     return category
   }
+
+  useEffect(() => { modeRef.current = mode }, [mode])
+  useEffect(() => { currentDateRef.current = currentDate }, [currentDate])
+  useEffect(() => {
+    if (grid !== null) return;
+    fetch(`${backendUrl}/api/get_daily_grid?date=${currentDate}`)
+      .then((result) => result.json())
+      .then((json: Grid) => {
+        setGrid(json);
+        setGridState(makeDefaultGridState());
+        setGuessesRemaining(12);
+      });
+  }, [])
+  useEffect(() => {saveStateToLocalStorage()}, [grid, gridState, guessesRemaining])
+  useEffect(()=> {loadSolutionsPersonData()}, [grid])
+
+  useEffect(() => {
+    if (searchTerm === "") return;
+    const delayDebounceFn = setTimeout(() => {loadPeopleFromApi()}, 1000)
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchTerm])
+
   return (
     <>
       {grid == null  ? <p>loading...</p> : 
@@ -382,12 +478,23 @@ function App() {
               <p className="info-description"><b>World championship podium: </b>all people who podiumed at any world championship</p>
               <p className="info-description"><b>Continental championship podium: </b>all people from said continent who have a continental title (e.g., Patrick Ponce does not count for Europe, despite coming first in 3x3 at Euroes 2022).</p>
               <p className="info-description"><b>X+ comps:</b> people who went to more than X comps</p>
+              <p className="info-description"><b>Represents country:</b> people who represent a country or represented a country in the past</p>
               <p className="info-header"><b>Data ownership disclaimer</b></p>
               <p className="info-description"> This information is based on competition results owned and maintained by the World Cube Assocation, published at https://worldcubeassociation.org/results as of March 21, 2026.</p>
               </div>
             </DialogPanel>
           </div>
       </Dialog>
+      <div className="mode-toggle-container">
+        <button className={mode === 'daily' ? 'mode-toggle active' : 'mode-toggle'} onClick={() => switchMode('daily')}>Daily</button>
+        <button className={mode === 'free' ? 'mode-toggle active' : 'mode-toggle'} onClick={() => switchMode('free')}>Free play</button>
+      </div>
+      {mode === 'daily' && <div className="date-nav-container">
+        <button onClick={() => shiftDate(-1)}>←</button>
+        <input type="date" value={currentDate} max={getTodayString()} onChange={(e) => changeDate(e.target.value)}></input>
+        <button onClick={() => shiftDate(1)} disabled={currentDate >= getTodayString()}>→</button>
+        <button onClick={() => changeDate(getTodayString())}>Today</button>
+      </div>}
       <div className="info-container"><div className="guess-info">Guesses remaining: {guessesRemaining}</div><div className="info-circle" onClick={() => {setShowInfo(true)}}><InfoCircle/></div></div>
       <div className = "grid">
         <div className="grid-row">
@@ -426,7 +533,7 @@ function App() {
         <p>Share your result!</p>
         <button className="shareButton" onClick={handleShare}><span className="buttonText">Share</span> <Share /></button>
       </div>}
-      {gameState() != "ongoing" && <p><button onClick={() => setShowSolutions(!showSolutions)}>{showSolutions ? 'Hide solutions' : 'Show solutions'}</button><button className="resetButton" onClick={handleNewGameClick}>New game</button></p>}
+      {gameState() != "ongoing" && <p><button onClick={() => setShowSolutions(!showSolutions)}>{showSolutions ? 'Hide solutions' : 'Show solutions'}</button>{mode === 'free' && <button className="resetButton" onClick={handleNewGameClick}>New game</button>}</p>}
     </div>}
     </>
   )

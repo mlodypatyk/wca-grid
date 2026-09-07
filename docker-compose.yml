@@ -9,7 +9,10 @@ services:
     environment:
       - DATABASE_URL=postgresql://wca:wcapass@db:5432/wcadata
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
 
   db:
     image: postgres:15
@@ -20,7 +23,20 @@ services:
       POSTGRES_DB: wcadata
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./init-schema:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wca -d wcadata"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  flyway:
+    image: flyway/flyway:10
+    command: -url=jdbc:postgresql://db:5432/wcadata -user=wca -password=wcapass -baselineOnMigrate=true -baselineVersion=1 migrate
+    volumes:
+      - ./migrations:/flyway/sql
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   db_data: {}

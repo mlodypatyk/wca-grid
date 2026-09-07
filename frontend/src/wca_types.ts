@@ -8,7 +8,7 @@ export interface Person  {
   updated_at: string
   url: string
   country: Country
-  delegate_status: any
+  delegate_status: unknown
   class: string
   teams: Team[]
   avatar: Avatar2

@@ -3,16 +3,21 @@ import random
 import re
 import os
 import psycopg2
+from datetime import datetime, timezone, date
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
+from psycopg2.extras import Json
 
-def generate_grid(categories, data):
+REFERENCE_DATE = date(2026, 3, 21)
+
+def generate_grid(categories, data, rng):
     weights = {
         'result': 10,
         'worlds_podium': 2,
         'cont_podium': 2,
-        'comps': 1
+        'comps': 1,
+        'country': 3
     }
     keys = weights.keys()
     categories_tree = {}
@@ -31,12 +36,12 @@ def generate_grid(categories, data):
         categories_now = []
         while len(categories_now) < 6:
             sum_of_weights = sum(list(weights.values()))
-            weight = random.random() * sum_of_weights
+            weight = rng.random() * sum_of_weights
             cur_sum = 0
             for cat_type in keys:
                 cur_sum += weights[cat_type]
                 if cur_sum > weight:
-                    new_cat = categories_tree[cat_type][random.randint(0, len(categories_tree[cat_type])-1)]
+                    new_cat = categories_tree[cat_type][rng.randint(0, len(categories_tree[cat_type])-1)]
                     if new_cat in categories_now:
                         break
                     if cat_type == 'result':
@@ -82,22 +87,66 @@ def generate_grid(categories, data):
 
 app = Flask(__name__)
 CORS(app)
+
+def build_squares(v, h, data):
+    return [
+        [list(data[h_i].intersection(data[v_j])) for v_j in v]
+        for h_i in h
+    ]
+
 @app.route('/api/get_grid')
 def get_grid():
-    data = pickle.load(open('data.pickle', 'rb'))
-    categories = list(data.keys())
-    v, h = generate_grid(categories, data)
+    v, h = generate_grid(categories, data, random.Random())
+    squares = build_squares(v, h, data)
     return jsonify({
-        'v': v, 
+        'v': v,
         'h': h,
-        'v_people': [list(data[v[0]]), list(data[v[1]]), list(data[v[2]])],
-        'h_people': [list(data[h[0]]), list(data[h[1]]), list(data[h[2]])],
+        'squares': squares,
+    })
+
+@app.route('/api/get_daily_grid')
+def get_daily_grid():
+    date_str = request.args.get('date')
+    if date_str:
+        puzzle_date = date.fromisoformat(date_str)
+    else:
+        puzzle_date = datetime.now(timezone.utc).date()
+
+    cursor = mydb.cursor()
+    cursor.execute(
+        "select puzzle_number, vertical_categories, horizontal_categories, squares from daily_puzzles where puzzle_date = %s",
+        (puzzle_date,)
+    )
+    row = cursor.fetchone()
+
+    if row is None:
+        puzzle_number = (puzzle_date - REFERENCE_DATE).days + 1
+        seed = int(puzzle_date.strftime('%Y%m%d'))
+        rng = random.Random(seed)
+        v, h = generate_grid(categories, data, rng)
+        squares = build_squares(v, h, data)
+        cursor.execute(
+            "insert into daily_puzzles (puzzle_date, puzzle_number, vertical_categories, horizontal_categories, squares) values (%s, %s, %s, %s, %s) on conflict (puzzle_date) do nothing",
+            (puzzle_date, puzzle_number, v, h, Json(squares))
+        )
+        mydb.commit()
+        cursor.execute(
+            "select puzzle_number, vertical_categories, horizontal_categories, squares from daily_puzzles where puzzle_date = %s",
+            (puzzle_date,)
+        )
+        row = cursor.fetchone()
+
+    puzzle_number, v, h, squares = row
+    return jsonify({
+        'date': puzzle_date.isoformat(),
+        'number': puzzle_number,
+        'v': v,
+        'h': h,
+        'squares': squares,
     })
 
 @app.route('/api/record_guess')
 def record_guess():
-    data = pickle.load(open('data.pickle', 'rb'))
-    categories = list(data.keys())
     wca_id = request.args.get('wca_id')
     if re.fullmatch("\d{4}[A-Z]{4}\d{2}", wca_id) is None:
         return []
@@ -107,14 +156,14 @@ def record_guess():
         return []
     if cat2 not in categories:
         return []
-    
+
     if cat1 > cat2: #flip them so they are in the same order in the db always
         cat1, cat2 = cat2, cat1
 
     possible_people = data[cat1].intersection(data[cat2])
     if wca_id not in possible_people:
         return []
-    
+
     guess_hits = 0
     guess_showings = 0
     cursor = mydb.cursor()
@@ -124,7 +173,7 @@ def record_guess():
         results = cursor.fetchall()
         if len(results) == 0:
             showings = 1
-            hits = 0 
+            hits = 0
             if person_id == wca_id:
                 hits += 1
                 guess_hits = hits
@@ -158,6 +207,9 @@ mydb = psycopg2.connect(
     database=database,
     port=port
 )
+
+data = pickle.load(open('data.pickle', 'rb'))
+categories = list(data.keys())
 
 if __name__ == '__main__':
     app.run()

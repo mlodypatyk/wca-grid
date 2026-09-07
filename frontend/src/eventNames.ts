@@ -1,6 +1,6 @@
 export interface EventInfo {
     id: string,
-    name: String
+    name: string
 }
 
 export const wca_events: EventInfo[] = [
@@ -24,7 +24,7 @@ export const wca_events: EventInfo[] = [
 ]
 
 export const getNameFromId = function(id: string) {
-    let eventList = wca_events.filter((event) => event.id == id)
+    const eventList = wca_events.filter((event) => event.id == id)
     if (eventList.length==0) return ''
     return eventList[0].name;
 }

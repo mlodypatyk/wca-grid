@@ -162,3 +162,33 @@ button.ff-button {
       width: 60%;
   }
 }
+.mode-toggle-container {
+    display: flex;
+    gap: 0.5em;
+    justify-content: center;
+    padding-bottom: 0.5em;
+}
+button.mode-toggle {
+    padding: 0.4em 1.2em;
+    border-radius: 0.4em;
+    border: 1px solid #888;
+    background: transparent;
+    cursor: pointer;
+}
+button.mode-toggle.active {
+    background: #005d72;
+    color: #fff;
+    border-color: #005d72;
+}
+.date-nav-container {
+    display: flex;
+    gap: 0.5em;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: 0.5em;
+}
+.date-nav-container input[type="date"] {
+    padding: 0.3em 0.5em;
+    border-radius: 0.4em;
+    border: 1px solid #888;
+}

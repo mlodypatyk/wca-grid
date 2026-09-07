@@ -121,9 +121,32 @@ if __name__ == '__main__':
 
     for pos, treshold in enumerate(comp_treshholds):
         categories_calc[f'comps: {treshold}+'] = comp_results[pos]
+
+
+    # people from countries - THIS HAS TO RUN LAST, TO FILTER EVERYONE
+    print('people countries')
+    def people_from_x_query(country) :
+        return f'''select wca_id from persons where country_id = "{country}"'''
+    
+    countries_to_query = ['USA','China','India','Australia','Canada','Brazil','United Kingdom','Poland','Russia','Philippines']
+
+    people_in_category = set()
+    for category_people in categories_calc.values():
+        people_in_category.update(category_people)
+
+    for country in countries_to_query:
+        people_country = set()
+        cursor.execute(people_from_x_query(country))
+        for person, in cursor:
+            if person in people_in_category:
+                people_country.add(person)
+        categories_calc[f'country: {country}'] = people_country
+
+
     print(time.time() - time_start)
     print('dumping...')
     pickle.dump(categories_calc, open('data.pickle', 'wb'))
+
 
     if upload_ftp:
         import paramiko
