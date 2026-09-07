@@ -5,14 +5,14 @@ import { getReadableCategoryName } from './categories'
 export type GameState = 'win' | 'lose' | 'ongoing'
 
 export const buildShareText = function (
-  mode: 'daily' | 'free',
+  mode: 'daily' | 'free' | 'previous',
   grid: Grid,
   gridState: GridState,
   guessesRemaining: number,
   gameState: GameState,
 ): string {
   let finalText = ''
-  if (mode === 'daily') {
+  if (mode !== 'free') {
     finalText += `Daily #${grid.number}\n`
     if(gameState == "win"){
       finalText += `${guessesRemaining} guesses remaining\n`

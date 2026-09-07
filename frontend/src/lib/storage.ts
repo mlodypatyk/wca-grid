@@ -7,13 +7,13 @@ export const getInitialDailyState = (): { grid: Grid; gridState: GridState; gues
 }
 
 export const saveStateToLocalStorage = function (
-  mode: 'daily' | 'free',
+  mode: 'daily' | 'free' | 'previous',
   currentDate: string,
   grid: Grid,
   gridState: GridState,
   guessesRemaining: number,
 ) {
-  if (mode === 'daily') {
+  if (mode !== 'free') {
     localStorage.setItem(`daily_state_${currentDate}`, JSON.stringify({ grid, gridState, guessesRemaining }));
   } else {
     localStorage.setItem("free_grid", JSON.stringify(grid))

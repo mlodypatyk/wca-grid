@@ -19,6 +19,20 @@ import ModeToggle from './components/ModeToggle'
 import DateNav from './components/DateNav'
 import ResultBox from './components/ResultBox'
 
+const computeGameState = function (gridState: GridState, guessesRemaining: number): GameState {
+  let isSolved = true;
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      if (gridState.state[i][j].state == null) {
+        isSolved = false;
+      }
+    }
+  }
+  if (isSolved) return "win";
+  if (guessesRemaining == 0) return "lose";
+  return "ongoing";
+}
+
 function App() {
   const backendUrl = import.meta.env.VITE_BACKEND_URL
   const [grid, setGrid] = useState<Grid | null>(() => getInitialDailyState()?.grid ?? null);
@@ -35,7 +49,7 @@ function App() {
   const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
   const [peopleData, setPeopleData] = useState<Map<string, Person>>(new Map<string, Person>);
   const [showInfo, setShowInfo] = useState<boolean>(false);
-  const [mode, setMode] = useState<'daily' | 'free'>('daily');
+  const [mode, setMode] = useState<'daily' | 'free' | 'previous'>('daily');
   const [currentDate, setCurrentDate] = useState<string>(getTodayString);
 
   const modeRef = useRef(mode);
@@ -49,7 +63,7 @@ function App() {
     setGuessesRemaining(loaded.guessesRemaining);
   }
 
-  const switchMode = function (newMode: 'daily' | 'free') {
+  const switchMode = function (newMode: 'daily' | 'free' | 'previous') {
     if (newMode === mode) return;
     setMode(newMode);
     setShowSolutions(false);
@@ -57,9 +71,19 @@ function App() {
     setSearchPeople([]);
     setModalOpen(false);
     if (newMode === 'daily') {
-      loadDailyGrid(backendUrl, currentDateRef.current).then(applyLoadedState);
-    } else {
+      const today = getTodayString();
+      setCurrentDate(today);
+      loadDailyGrid(backendUrl, today).then(applyLoadedState);
+    } else if (newMode === 'free') {
       loadFreeGrid(backendUrl).then(applyLoadedState);
+    } else {
+      const d = parseDate(currentDateRef.current);
+      if (toDateString(d) === getTodayString()) {
+        d.setDate(d.getDate() - 1);
+      }
+      const previousDate = toDateString(d);
+      setCurrentDate(previousDate);
+      loadDailyGrid(backendUrl, previousDate).then(applyLoadedState);
     }
   }
 
@@ -124,23 +148,14 @@ function App() {
   }
 
   const gameState = function (): GameState {
-    let isSolved = true;
-    for(let i=0;i<3;i++){
-      for(let j=0;j<3;j++){
-        const slot = gridState.state[i][j].state;
-        if(slot == null){
-          isSolved = false;
-        }
-      }
-    }
-    if(isSolved){
-      return "win";
-    } else if(guessesRemaining == 0 ){
-      return "lose";
-    } else {
-      return "ongoing"
-    }
+    return computeGameState(gridState, guessesRemaining);
   }
+
+  const todayDailyState: GameState = (() => {
+    if (mode === 'daily') return gameState();
+    const saved = getInitialDailyState();
+    return saved == null ? 'ongoing' : computeGameState(saved.gridState, saved.guessesRemaining);
+  })();
 
   useEffect(() => { modeRef.current = mode }, [mode])
   useEffect(() => { currentDateRef.current = currentDate }, [currentDate])
@@ -190,8 +205,8 @@ function App() {
         peopleData={peopleData}
       />
       <InfoDialog open={showInfo} onClose={() => setShowInfo(false)} />
-      <ModeToggle mode={mode} onSwitch={switchMode} />
-      {mode === 'daily' && <DateNav currentDate={currentDate} onShiftDate={shiftDate} onChangeDate={changeDate} />}
+      <ModeToggle mode={mode} onSwitch={switchMode} disablePrevious ={todayDailyState === 'ongoing'}/>
+      {mode === 'previous' && <DateNav currentDate={currentDate} onShiftDate={shiftDate} onChangeDate={changeDate} />}
       <div className="info-container"><div className="guess-info">Guesses remaining: {guessesRemaining}</div><div className="info-circle" onClick={() => {setShowInfo(true)}}><InfoCircle/></div></div>
       <GridBoard
         grid={grid}

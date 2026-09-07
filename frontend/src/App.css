@@ -187,8 +187,8 @@ button.mode-toggle.active {
     align-items: center;
     padding-bottom: 0.5em;
 }
-.date-nav-container input[type="date"] {
-    padding: 0.3em 0.5em;
-    border-radius: 0.4em;
-    border: 1px solid #888;
+.date-nav-container .puzzle-number {
+    min-width: 4em;
+    text-align: center;
+    font-weight: bold;
 }
