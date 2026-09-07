@@ -59,6 +59,8 @@ export const searchUsers = function (searchTerm: string): Promise<Person[]> {
     .then((json) => json.result);
 }
 
+const personDataCache = new Map<string, Person>();
+
 export const loadSolutionsPersonData = function (grid: Grid): Promise<Map<string, Person>> {
   if(import.meta.env.DEV) return Promise.resolve(new Map()); // annoy wca servers a bit less
   const wca_ids_set = new Set<string>();
@@ -70,19 +72,26 @@ export const loadSolutionsPersonData = function (grid: Grid): Promise<Map<string
   }
   const wca_ids = Array.from(wca_ids_set.values())
   const personData = new Map<string, Person>();
+  for (const wca_id of wca_ids) {
+    const cached = personDataCache.get(wca_id);
+    if (cached !== undefined) {
+      personData.set(wca_id, cached);
+    }
+  }
+  const idsToRequest = wca_ids.filter((wca_id) => !personDataCache.has(wca_id));
   const fetchChunk = function (handledIds: number): Promise<void> {
-    if (handledIds >= wca_ids.length) {
+    if (handledIds >= idsToRequest.length) {
       return Promise.resolve();
     }
     let range_end = handledIds + 20;
-    if(range_end > wca_ids.length){
-      range_end = wca_ids.length;
+    if(range_end > idsToRequest.length){
+      range_end = idsToRequest.length;
     }
-    const idsToRequest = wca_ids.slice(handledIds, range_end)
-    return fetch(`https://www.worldcubeassociation.org/api/v0/persons?wca_ids=${idsToRequest.join(',')}`)
+    const idsToFetch = idsToRequest.slice(handledIds, range_end)
+    return fetch(`https://www.worldcubeassociation.org/api/v0/persons?wca_ids=${idsToFetch.join(',')}`)
       .then((response) => response.json())
       .then((people: Array<PersonsApiResponse>) => {
-        people.map((person) => {personData.set(person.person.wca_id, person.person)})
+        people.map((person) => {personData.set(person.person.wca_id, person.person); personDataCache.set(person.person.wca_id, person.person)})
         return fetchChunk(handledIds + 20);
       });
   };
