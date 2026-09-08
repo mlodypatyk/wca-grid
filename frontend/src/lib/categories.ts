@@ -8,6 +8,9 @@ export const getReadableCategoryName = function (category: string) {
     const requirement = catData.split(' ')[2].substring(4)
     return `${getNameFromId(event)} under ${parseFloat(requirement).toString()}${event == '333fm' ? ' moves' : 's'}`
   }
+  if (catType == 'record') {
+    return `Held record: ${catData}`
+  }
   if (catType == 'country') {
     return `Represented ${catData}`
   }

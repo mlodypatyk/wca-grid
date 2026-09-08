@@ -123,6 +123,20 @@ if __name__ == '__main__':
         categories_calc[f'comps: {treshold}+'] = comp_results[pos]
 
 
+    # records
+    print('records')
+    nr_query = '''select distinct(person_id) from results where regional_average_record = "NR" or regional_single_record = "NR"'''
+    cr_query = '''select distinct(person_id) from results where regional_average_record in ('AfR', 'AsR', 'ER', 'NAR', 'OcR', 'SAR') or regional_single_record in ('AfR', 'AsR', 'ER', 'NAR', 'OcR', 'SAR')'''
+    wr_query = '''select distinct(person_id) from results where regional_average_record = "WR" or regional_single_record = "WR"'''
+
+    cursor.execute(nr_query)
+    categories_calc['record: NR'] = set([p[0] for p in cursor.fetchall()])
+    cursor.execute(cr_query)
+    categories_calc['record: CR'] = set([p[0] for p in cursor.fetchall()])
+    cursor.execute(wr_query)
+    categories_calc['record: WR'] = set([p[0] for p in cursor.fetchall()])
+
+
     # people from countries - THIS HAS TO RUN LAST, TO FILTER EVERYONE
     print('people countries')
     def people_from_x_query(country) :

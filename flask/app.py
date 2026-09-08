@@ -21,7 +21,8 @@ def generate_grid(categories, data, rng):
         'worlds_podium': 2,
         'cont_podium': 2,
         'comps': 1,
-        'country': 3
+        'country': 3,
+        'record': 1,
     }
     keys = weights.keys()
     categories_tree = {}
