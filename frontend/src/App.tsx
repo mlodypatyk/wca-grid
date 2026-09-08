@@ -147,7 +147,11 @@ function App() {
     const newGridState = { state: gridState.state.map(row => row.map(tile => ({ ...tile }))) };
     newGridState.state[currentH][currentV].state = person;
     setGridState(newGridState);
-    recordGuess(backendUrl, person.wca_id, grid.h[currentH], grid.v[currentV])
+    recordGuess(backendUrl, person.wca_id, grid.h[currentH], grid.v[currentV]).then(({hits, showings}) => {
+      const newGridState2 = { state: newGridState.state.map(row => row.map(tile => ({ ...tile }))) };
+      newGridState2.state[currentH][currentV].guessRating = hits / showings;
+      setGridState(newGridState2);
+    })
   }
 
   const handleNewGameClick = function () {

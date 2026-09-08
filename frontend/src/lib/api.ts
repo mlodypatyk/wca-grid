@@ -45,12 +45,12 @@ export const loadFreeGrid = async function (backendUrl: string): Promise<LoadedS
   return { grid, gridState: makeDefaultGridState(), guessesRemaining: 12 };
 }
 
-export const recordGuess = function (backendUrl: string, wca_id: string, cat1: string, cat2: string) {
+export const recordGuess = function (backendUrl: string, wca_id: string, cat1: string, cat2: string): Promise<{hits: number, showings: number}> {
   const params = new URLSearchParams();
   params.append('wca_id', wca_id)
   params.append('cat1', cat1)
   params.append('cat2', cat2)
-  fetch(backendUrl + `/api/record_guess?${params}`)
+  return fetch(backendUrl + `/api/record_guess?${params}`).then((result) => result.json());
 }
 
 export const searchUsers = function (searchTerm: string): Promise<Person[]> {

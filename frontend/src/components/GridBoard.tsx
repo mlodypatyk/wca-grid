@@ -1,5 +1,6 @@
 import type { Grid, GridState } from '../types'
 import { getReadableCategoryName } from '../lib/categories'
+import GuessRating from './GuessRating'
 
 type Props = {
   grid: Grid
@@ -12,12 +13,18 @@ type Props = {
 
 const getGridTile = function (grid: Grid, gridState: GridState, showSolutions: boolean, onShowSolutionsClick: (solutions: string[]) => void, h: number, v: number) {
   const person = gridState.state[h][v].state
+  const rating = gridState.state[h][v].guessRating;
   if (showSolutions){
     const solutions = grid.squares[h][v]
     return <div className="solution-display" onClick={() => onShowSolutionsClick(solutions)}><p>Solutions: {solutions.length}</p></div>
   }
   if(person == null) return <div className="inner"></div>
-  return <div className="person-display"><img src={person.avatar.thumb_url}></img><p className="name-tag">{person.name}</p></div>
+  return <div className="person-display">
+    <img className="person-image" src={person.avatar.thumb_url}></img>
+    <p className="name-tag">{person.name}</p>
+    {(rating != null && import.meta.env.DEV) && <GuessRating rating ={rating}/>}
+    <div style={{height: 5}}></div>  
+  </div>
 }
 
 export default function GridBoard({ grid, gridState, showSolutions, onTileClick, onShowSolutionsClick, onCopyLink }: Props) {
