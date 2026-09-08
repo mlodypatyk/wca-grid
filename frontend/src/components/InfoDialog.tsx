@@ -20,6 +20,7 @@ export default function InfoDialog({ open, onClose }: Props) {
             <p className="info-description"><b>Continental championship podium: </b>all people from said continent who have a continental title (e.g., Patrick Ponce does not count for Europe, despite coming first in 3x3 at Euroes 2022).</p>
             <p className="info-description"><b>X+ comps:</b> people who went to more than X comps</p>
             <p className="info-description"><b>Represents country:</b> people who represent a country or represented a country in the past</p>
+            <p className="info-description"><b>Held record:</b> people who held a particular type of record, doesn't count down (e.g., a WR is not an NR).</p>
             <p className="info-header"><b>Data ownership disclaimer</b></p>
             <p className="info-description"> This information is based on competition results owned and maintained by the World Cube Assocation, published at https://worldcubeassociation.org/results as of March 21, 2026.</p>
           </div>
