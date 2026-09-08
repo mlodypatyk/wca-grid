@@ -2,6 +2,12 @@ import type { Grid, GridState } from '../types'
 
 export type GameState = 'win' | 'lose' | 'ongoing'
 
+const getFlagEmoji = function (iso2: string): string {
+  return iso2
+    .toUpperCase()
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
+}
+
 export const buildShareText = function (
   mode: 'daily' | 'free' | 'previous',
   grid: Grid,
@@ -18,10 +24,11 @@ export const buildShareText = function (
   }
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
-      if (gridState.state[i][j].state == null) {
+      const person = gridState.state[i][j].state
+      if (person == null) {
         finalText += '❌'
       } else {
-        finalText += '✅'
+        finalText += getFlagEmoji(person.country.iso2)
       }
     }
     finalText += '\n'
