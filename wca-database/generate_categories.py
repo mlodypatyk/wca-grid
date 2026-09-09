@@ -23,20 +23,20 @@ if __name__ == '__main__':
     time_start = time.time()
     print('events')
     result_categories = {
-        '333': [500, 600],
-        '222': [130, 170],
-        '444': [2800],
-        '555': [4500],
-        '333oh': [1000, 1100],
-        'pyram': [170, 200],
-        'skewb': [200, 250],
-        '333fm': [2300, 2500],
-        'clock': [300, 350],
-        'minx': [3200, 3500],
-        'sq1': [700, 800]
+        '333': [525, 550, 575, 600, 625],
+        '222': [120, 130],
+        'pyram': [175, 200],
+        'skewb': [200, 225],
+        'clock': [350, 375],
+        '444': [2400, 2600],
+        '555': [4500, 4800],
+        'minx': [3200, 3700],
+        '333oh': [900, 1000],
+        '333fm': [2100, 2300],
+        'sq1': [650, 750]
     }
     result_categories_single = {
-        '333bf': [2000, 2500]
+        '333bf': [1800, 2000]
     }
     categories_calc = {}
     for event in result_categories:
@@ -47,6 +47,7 @@ if __name__ == '__main__':
             cursor.execute(query)
             for id, in cursor:
                 result.add(id)
+            print(f'{event} {time_treshold} {len(result)}')
             categories_calc[title] = result
 
     for event in result_categories_single:
@@ -57,6 +58,7 @@ if __name__ == '__main__':
             cursor.execute(query)
             for id, in cursor:
                 result.add(id)
+            print(f'{event} {time_treshold} {len(result)}')
             categories_calc[title] = result
         
     print('worlds podium')
