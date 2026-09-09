@@ -5,6 +5,13 @@ type Props = {
   onClose: () => void
 }
 
+function handleReset() {
+  if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
+    localStorage.clear()
+    window.location.reload()
+  }
+}
+
 export default function InfoDialog({ open, onClose }: Props) {
   return (
     <Dialog open={open} onClose={onClose} className="dialog-wrapper">
@@ -23,6 +30,7 @@ export default function InfoDialog({ open, onClose }: Props) {
             <p className="info-description"><b>Held record:</b> people who held a particular type of record, doesn't count down (e.g., a WR is not an NR).</p>
             <p className="info-header"><b>Data ownership disclaimer</b></p>
             <p className="info-description"> This information is based on competition results owned and maintained by the World Cube Assocation, published at https://worldcubeassociation.org/results as of March 21, 2026.</p>
+            <div className="ff-button-container"><button className="ff-button" onClick={handleReset}>Reset game data</button></div>
           </div>
         </DialogPanel>
       </div>
