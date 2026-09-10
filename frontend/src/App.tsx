@@ -19,6 +19,7 @@ import InfoDialog from './components/InfoDialog'
 import ModeToggle from './components/ModeToggle'
 import DateNav from './components/DateNav'
 import ResultBox from './components/ResultBox'
+import Countdown from './components/Countdown'
 
 const computeGameState = function (gridState: GridState, guessesRemaining: number): GameState {
   let isSolved = true;
@@ -291,6 +292,7 @@ function App() {
         onToggleSolutions={() => setShowSolutions(!showSolutions)}
         onNewGame={handleNewGameClick}
       />
+      {mode === 'daily' && todayDailyState !== 'ongoing' && <Countdown />}
     </div>}
     </>
   )
