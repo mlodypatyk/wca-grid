@@ -30,6 +30,24 @@ export const saveSeededGrid = function (backendUrl: string, seed: string) {
   fetch(`${backendUrl}/api/save_seeded_grid?seed=${seed}`, { method: 'POST' })
 }
 
+export type ScoreSubmission = {
+  mode: 'daily' | 'previous'
+  game_state: 'win' | 'lose'
+  score: number
+  guesses_remaining: number
+  puzzle_date: string
+  puzzle_number?: number
+  grid_state: { wca_id: string | null; guessRating: number | null }[][]
+}
+
+export const submitScore = function (backendUrl: string, payload: ScoreSubmission): Promise<Response> {
+  return fetch(`${backendUrl}/api/submit_score`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export const loadFreeGrid = async function (backendUrl: string): Promise<LoadedState> {
   const savedGrid = localStorage.getItem("free_grid");
   if (savedGrid !== null) {

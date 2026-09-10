@@ -2,6 +2,8 @@ import random
 import re
 from datetime import datetime, timezone, date
 from flask import jsonify, request
+from iptocc import country_code
+from psycopg2.extras import Json
 
 from app import app
 from db import mydb
@@ -154,3 +156,56 @@ def record_guess():
             pass # panic
     mydb.commit()
     return {'hits': guess_hits, 'showings': guess_showings}
+
+def get_client_ip():
+    forwarded_for = request.headers.get('X-Forwarded-For')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    return request.headers.get('X-Real-IP') or request.remote_addr
+
+@app.route('/api/submit_score', methods=['POST'])
+def submit_score():
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({'error': 'invalid body'}), 400
+
+    mode = body.get('mode')
+    if mode not in ('daily', 'previous'):
+        return jsonify({'error': 'invalid mode'}), 400
+
+    game_state = body.get('game_state')
+    if game_state not in ('win', 'lose'):
+        return jsonify({'error': 'invalid game_state'}), 400
+
+    score = body.get('score')
+    if not isinstance(score, int) or isinstance(score, bool) or not 0 <= score <= 2000:
+        return jsonify({'error': 'invalid score'}), 400
+
+    guesses_remaining = body.get('guesses_remaining')
+    if not isinstance(guesses_remaining, int) or isinstance(guesses_remaining, bool) or not 0 <= guesses_remaining <= 12:
+        return jsonify({'error': 'invalid guesses_remaining'}), 400
+
+    try:
+        puzzle_date = date.fromisoformat(body.get('puzzle_date', ''))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'invalid puzzle_date'}), 400
+
+    puzzle_number = body.get('puzzle_number')
+    if puzzle_number is not None and (not isinstance(puzzle_number, int) or isinstance(puzzle_number, bool)):
+        return jsonify({'error': 'invalid puzzle_number'}), 400
+
+    grid_state = body.get('grid_state')
+    if not isinstance(grid_state, list) or len(grid_state) != 3 or any(not isinstance(row, list) or len(row) != 3 for row in grid_state):
+        return jsonify({'error': 'invalid grid_state'}), 400
+
+    ip = get_client_ip()
+    country_iso2 = country_code(ip) if ip else None
+    user_agent = (request.headers.get('User-Agent') or '')[:512]
+
+    cursor = mydb.cursor()
+    cursor.execute(
+        "insert into grid_scores (game_state, score, guesses_remaining, mode, puzzle_date, puzzle_number, user_agent, country_iso2, grid_state) values (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        (game_state, score, guesses_remaining, mode, puzzle_date, puzzle_number, user_agent, country_iso2, Json(grid_state))
+    )
+    mydb.commit()
+    return jsonify({'ok': True})

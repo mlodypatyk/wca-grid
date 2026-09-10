@@ -8,8 +8,9 @@ import { InfoCircle } from '@boxicons/react'
 import { getTodayString, parseDate, toDateString } from './lib/dates'
 import { makeDefaultGridState } from './lib/gridState'
 import { getInitialDailyState, saveStateToLocalStorage } from './lib/storage'
-import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadSeededGrid, loadSolutionsPersonData, recordGuess, saveSeededGrid, searchUsers, type LoadedState } from './lib/api'
+import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadSeededGrid, loadSolutionsPersonData, recordGuess, saveSeededGrid, searchUsers, submitScore, type LoadedState, type ScoreSubmission } from './lib/api'
 import { buildShareText, type GameState } from './lib/share'
+import { computeScore } from './lib/score'
 import { toastAlreadyGuessed, toastCopiedFailed, toastCopiedSuccess, toastWrongGuess } from './lib/toasts'
 import GridBoard from './components/GridBoard'
 import PersonSearchDialog from './components/PersonSearchDialog'
@@ -195,6 +196,42 @@ function App() {
     if (grid === null) return;
     saveStateToLocalStorage(modeRef.current, currentDateRef.current, grid, gridState, guessesRemaining);
   }, [grid, gridState, guessesRemaining])
+  useEffect(() => {
+    if (grid === null) return;
+    if (mode !== 'daily' && mode !== 'previous') return;
+    const state = computeGameState(gridState, guessesRemaining);
+    if (state === 'ongoing') return;
+    let hasCorrectGuess = false;
+    let allRatingsReady = true;
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const tile = gridState.state[i][j];
+        if (tile.state != null) {
+          hasCorrectGuess = true;
+          if (tile.guessRating == null) allRatingsReady = false;
+        }
+      }
+    }
+    if (!hasCorrectGuess) return;
+    if (!allRatingsReady) return;
+    const storageKey = `score_submitted_${mode}_${currentDate}`;
+    if (localStorage.getItem(storageKey) !== null) return;
+    localStorage.setItem(storageKey, '1');
+    const payload: ScoreSubmission = {
+      mode,
+      game_state: state,
+      score: computeScore(gridState),
+      guesses_remaining: guessesRemaining,
+      puzzle_date: currentDate,
+      grid_state: gridState.state.map(row => row.map(tile => ({
+        wca_id: tile.state?.wca_id ?? null,
+        guessRating: tile.guessRating,
+      }))),
+    };
+    if (grid.number != null) payload.puzzle_number = grid.number;
+    submitScore(backendUrl, payload).catch(() => { localStorage.removeItem(storageKey); });
+  }, [grid, gridState, guessesRemaining, mode, currentDate, backendUrl])
+
   useEffect(() => {
     if (grid === null) return;
     loadSolutionsPersonData(grid).then(setPeopleData);
