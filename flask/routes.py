@@ -1,3 +1,5 @@
+import hmac
+import os
 import random
 import re
 from datetime import datetime, timezone, date
@@ -209,3 +211,39 @@ def submit_score():
     )
     mydb.commit()
     return jsonify({'ok': True})
+
+@app.route('/api/stats')
+def stats():
+    token = os.getenv('STATS_TOKEN')
+    if not token or not hmac.compare_digest(request.args.get('token', ''), token):
+        return jsonify({'error': 'unauthorized'}), 401
+
+    cursor = mydb.cursor()
+    cursor.execute(
+        "select puzzle_date, count(*) as plays, avg(score) as avg_score "
+        "from grid_scores group by puzzle_date order by puzzle_date"
+    )
+    grids = [
+        {
+            'puzzle_date': puzzle_date.isoformat(),
+            'plays': plays,
+            'avg_score': round(float(avg_score), 2),
+        }
+        for puzzle_date, plays, avg_score in cursor.fetchall()
+    ]
+
+    cursor.execute(
+        "select country_iso2, count(*) as plays, "
+        "round(100.0 * count(*) / sum(count(*)) over (), 2) as percentage "
+        "from grid_scores group by country_iso2 order by plays desc"
+    )
+    countries = [
+        {
+            'country_iso2': country_iso2,
+            'plays': plays,
+            'percentage': float(percentage),
+        }
+        for country_iso2, plays, percentage in cursor.fetchall()
+    ]
+
+    return jsonify({'grids': grids, 'countries': countries})
