@@ -4,36 +4,24 @@ import './App.css'
 import { ToastContainer } from 'react-toastify'
 import type { Person } from './wca_types'
 import type { Grid, GridState } from './types'
-import { InfoCircle } from '@boxicons/react'
+import { BarChart, InfoCircle } from '@boxicons/react'
 import { getTodayString, parseDate, toDateString } from './lib/dates'
 import { makeDefaultGridState } from './lib/gridState'
 import { getInitialDailyState, saveStateToLocalStorage } from './lib/storage'
 import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadSeededGrid, loadSolutionsPersonData, recordGuess, saveSeededGrid, searchUsers, submitScore, type LoadedState, type ScoreSubmission } from './lib/api'
 import { buildShareText, type GameState } from './lib/share'
 import { computeScore } from './lib/score'
+import { computeGameState } from './lib/stats'
 import { toastAlreadyGuessed, toastCopiedFailed, toastCopiedSuccess, toastWrongGuess } from './lib/toasts'
 import GridBoard from './components/GridBoard'
 import PersonSearchDialog from './components/PersonSearchDialog'
 import SolutionsDialog from './components/SolutionsDialog'
 import InfoDialog from './components/InfoDialog'
+import StatsDialog from './components/StatsDialog'
 import ModeToggle from './components/ModeToggle'
 import DateNav from './components/DateNav'
 import ResultBox from './components/ResultBox'
 import Countdown from './components/Countdown'
-
-const computeGameState = function (gridState: GridState, guessesRemaining: number): GameState {
-  let isSolved = true;
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      if (gridState.state[i][j].state == null) {
-        isSolved = false;
-      }
-    }
-  }
-  if (isSolved) return "win";
-  if (guessesRemaining == 0) return "lose";
-  return "ongoing";
-}
 
 function App() {
   const backendUrl = import.meta.env.VITE_BACKEND_URL
@@ -51,6 +39,7 @@ function App() {
   const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
   const [peopleData, setPeopleData] = useState<Map<string, Person>>(new Map<string, Person>);
   const [showInfo, setShowInfo] = useState<boolean>(false);
+  const [showStats, setShowStats] = useState<boolean>(false);
   const [mode, setMode] = useState<'daily' | 'free' | 'previous'>('daily');
   const [currentDate, setCurrentDate] = useState<string>(getTodayString);
   const [seed, setSeed] = useState<string | null>(null);
@@ -271,9 +260,10 @@ function App() {
         peopleData={peopleData}
       />
       <InfoDialog open={showInfo} onClose={() => setShowInfo(false)} />
+      <StatsDialog open={showStats} onClose={() => setShowStats(false)} />
       <ModeToggle mode={mode} onSwitch={switchMode} disablePrevious ={todayDailyState === 'ongoing'}/>
       {mode === 'previous' && <DateNav currentDate={currentDate} onShiftDate={shiftDate} onChangeDate={changeDate} />}
-      <div className="info-container"><div className="guess-info">Guesses remaining: {guessesRemaining}</div><div className="info-circle" onClick={() => {setShowInfo(true)}}><InfoCircle/></div></div>
+      <div className="info-container"><div className="guess-info">Guesses remaining: {guessesRemaining}</div><div className="info-icons"><div className="info-circle" onClick={() => {setShowStats(true)}}><BarChart/></div><div className="info-circle" onClick={() => {setShowInfo(true)}}><InfoCircle/></div></div></div>
       <GridBoard
         grid={grid}
         gridState={gridState}

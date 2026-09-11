@@ -153,9 +153,15 @@ button.ff-button {
     align-self: center;
 }
 
+.info-icons {
+    display: flex;
+    gap: 0.5em;
+}
+
 .info-circle {
     display: inline;
     align-self: end;
+    cursor: pointer;
 }
 @media (max-width:480px) {
   .info-container {
