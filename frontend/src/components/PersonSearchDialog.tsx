@@ -19,9 +19,11 @@ export default function PersonSearchDialog({ open, onClose, searchTerm, onSearch
 
   useEffect(() => {
     if (!open) return
-    if (window.matchMedia('(max-width: 480px)').matches) {
+    if (!window.matchMedia('(max-width: 480px)').matches) return
+    const frame = requestAnimationFrame(() => {
       inputRef.current?.focus()
-    }
+    })
+    return () => cancelAnimationFrame(frame)
   }, [open])
 
   useEffect(() => {
