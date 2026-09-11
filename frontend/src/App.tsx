@@ -46,6 +46,8 @@ function App() {
 
   const modeRef = useRef(mode);
   const currentDateRef = useRef(currentDate);
+  const searchRequestIdRef = useRef(0);
+  const [searchCompletedId, setSearchCompletedId] = useState(0);
 
   const closeModal = () => setModalOpen(false);
 
@@ -228,15 +230,21 @@ function App() {
   }, [grid])
 
   useEffect(() => {
+    const requestId = ++searchRequestIdRef.current;
     if (searchTerm === "") return;
     const delayDebounceFn = setTimeout(() => {
       setSearchLoading(true);
       searchUsers(searchTerm).then((people) => {
+        if (requestId !== searchRequestIdRef.current) return;
         setSearchLoading(false);
         setSearchPeople(people);
+        if (people.length > 0) setSearchCompletedId(requestId);
       });
     }, 1000)
-    return () => clearTimeout(delayDebounceFn)
+    return () => {
+      clearTimeout(delayDebounceFn)
+      setSearchLoading(false);
+    }
   }, [searchTerm])
 
   return (
@@ -251,6 +259,7 @@ function App() {
         onSearchChange={setSearchTerm}
         searchLoading={searchLoading}
         searchPeople={searchPeople}
+        searchCompletedId={searchCompletedId}
         onSelect={(person) => { handleGuess(person); closeModal(); setSearchPeople([]) }}
       />
       <SolutionsDialog
