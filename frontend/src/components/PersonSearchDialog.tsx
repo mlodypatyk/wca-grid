@@ -18,6 +18,13 @@ export default function PersonSearchDialog({ open, onClose, searchTerm, onSearch
   const lastCompletedId = useRef(searchCompletedId)
 
   useEffect(() => {
+    if (!open) return
+    if (window.matchMedia('(max-width: 480px)').matches) {
+      inputRef.current?.focus()
+    }
+  }, [open])
+
+  useEffect(() => {
     if (searchCompletedId === lastCompletedId.current) return
     lastCompletedId.current = searchCompletedId
     if (window.matchMedia('(max-width: 480px)').matches) {
