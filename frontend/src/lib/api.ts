@@ -4,6 +4,12 @@ import { makeDefaultGridState } from './gridState'
 
 export type LoadedState = { grid: Grid; gridState: GridState; guessesRemaining: number }
 
+export type ExportMetadata = { export_date: string }
+
+export const loadExportMetadata = function (backendUrl: string): Promise<ExportMetadata> {
+  return fetch(backendUrl + '/api/get_export_metadata').then((result) => result.json());
+}
+
 export const loadGridFromApi = async function (backendUrl: string): Promise<Grid> {
   const result = await fetch(backendUrl + '/api/get_grid');
   const json: Grid = await result.json();

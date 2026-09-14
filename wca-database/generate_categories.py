@@ -20,6 +20,15 @@ if __name__ == '__main__':
     mydb = mysql.connector.connect(host=host, user=user, password=password, database=database)
     cursor = mydb.cursor()
 
+    db2 = mysql.connector.connect(host=host, user=user, password=password, database='wca_metadata')
+    cursor2 = db2.cursor()
+
+    cursor2.execute('select * from metadata limit 1;')
+    
+    _, export_metadata, _ = cursor2.fetchone()
+
+    db2.close()
+
     time_start = time.time()
     print('events')
     result_categories = {
@@ -161,7 +170,7 @@ if __name__ == '__main__':
 
     print(time.time() - time_start)
     print('dumping...')
-    pickle.dump(categories_calc, open('data.pickle', 'wb'))
+    pickle.dump({'categories':categories_calc, 'metadata': export_metadata}, open('data.pickle', 'wb'))
 
 
     if upload_ftp:

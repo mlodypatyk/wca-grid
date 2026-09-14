@@ -9,7 +9,7 @@ from psycopg2.extras import Json
 
 from app import app
 from db import mydb
-from data import data, categories
+from data import data, categories, get_export_metadata
 from grid import new_seed, generate_grid, build_squares, build_grid
 
 REFERENCE_DATE = date(2026, 3, 21)
@@ -24,6 +24,10 @@ def get_grid():
         'squares': squares,
         'seed': seed,
     })
+
+@app.route('/api/get_export_metadata')
+def get_metadata():
+    return jsonify(get_export_metadata())
 
 @app.route('/api/get_seeded_grid')
 def get_seeded_grid():

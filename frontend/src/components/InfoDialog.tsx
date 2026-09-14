@@ -1,9 +1,15 @@
+import { useEffect, useState } from 'react'
 import { Dialog, DialogPanel } from '@headlessui/react'
+import { loadExportMetadata } from '../lib/api'
+import { parseDate } from '../lib/dates'
 
 type Props = {
   open: boolean
   onClose: () => void
 }
+
+const formatExportDate = (exportDate: string): string =>
+  parseDate(exportDate.slice(0, 10)).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
 function handleReset() {
   if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
@@ -13,6 +19,15 @@ function handleReset() {
 }
 
 export default function InfoDialog({ open, onClose }: Props) {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL
+  const [exportDate, setExportDate] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadExportMetadata(backendUrl)
+      .then((metadata) => setExportDate(formatExportDate(metadata.export_date)))
+      .catch(() => {})
+  }, [backendUrl])
+
   return (
     <Dialog open={open} onClose={onClose} className="dialog-wrapper">
       <div className="dialog-backdrop" />
@@ -29,7 +44,7 @@ export default function InfoDialog({ open, onClose }: Props) {
             <p className="info-description"><b>Represents country:</b> people who represent a country or represented a country in the past</p>
             <p className="info-description"><b>Held record:</b> people who held a particular type of record, doesn't count down (e.g., a WR is not an NR).</p>
             <p className="info-header"><b>Data ownership disclaimer</b></p>
-            <p className="info-description"> This information is based on competition results owned and maintained by the World Cube Assocation, published at https://worldcubeassociation.org/results as of March 21, 2026.</p>
+            <p className="info-description"> This information is based on competition results owned and maintained by the World Cube Assocation, published at https://worldcubeassociation.org/results as of {exportDate ?? 'an unknown date'}.</p>
             <div className="ff-button-container"><button className="ff-button" onClick={handleReset}>Reset game data</button></div>
           </div>
         </DialogPanel>
