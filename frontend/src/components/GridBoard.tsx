@@ -9,6 +9,7 @@ type Props = {
   onTileClick: (h: number, v: number) => void
   onShowSolutionsClick: (solutions: string[]) => void
   onCopyLink: () => void
+  onCategoryClick: (category: string) => void
 }
 
 const getGridTile = function (grid: Grid, gridState: GridState, showSolutions: boolean, onShowSolutionsClick: (solutions: string[]) => void, h: number, v: number) {
@@ -27,7 +28,7 @@ const getGridTile = function (grid: Grid, gridState: GridState, showSolutions: b
   </div>
 }
 
-export default function GridBoard({ grid, gridState, showSolutions, onTileClick, onShowSolutionsClick, onCopyLink }: Props) {
+export default function GridBoard({ grid, gridState, showSolutions, onTileClick, onShowSolutionsClick, onCopyLink, onCategoryClick }: Props) {
   return (
     <div className="grid">
       <div className="grid-row">
@@ -35,24 +36,24 @@ export default function GridBoard({ grid, gridState, showSolutions, onTileClick,
           {grid.number != null && <p className="grid-content">Daily #{grid.number}</p>}
           {grid.seed != null && <button className="copyLinkButton grid-content" onClick={onCopyLink}>Copy link</button>}
         </div>
-        <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[0])}</p></div>
-        <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[1])}</p></div>
-        <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.v[2])}</p></div>
+        <div className="grid-square category-cell" onClick={() => onCategoryClick(grid.v[0])}><p className="grid-content">{getReadableCategoryName(grid.v[0])}</p></div>
+        <div className="grid-square category-cell" onClick={() => onCategoryClick(grid.v[1])}><p className="grid-content">{getReadableCategoryName(grid.v[1])}</p></div>
+        <div className="grid-square category-cell" onClick={() => onCategoryClick(grid.v[2])}><p className="grid-content">{getReadableCategoryName(grid.v[2])}</p></div>
       </div>
       <div className="grid-row">
-        <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.h[0])}</p></div>
+        <div className="grid-square category-cell" onClick={() => onCategoryClick(grid.h[0])}><p className="grid-content">{getReadableCategoryName(grid.h[0])}</p></div>
         <div className="grid-square" onClick={() => onTileClick(0, 0)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 0, 0)}</div>
         <div className="grid-square" onClick={() => onTileClick(0, 1)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 0, 1)}</div>
         <div className="grid-square" onClick={() => onTileClick(0, 2)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 0, 2)}</div>
       </div>
       <div className="grid-row">
-        <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.h[1])}</p></div>
+        <div className="grid-square category-cell" onClick={() => onCategoryClick(grid.h[1])}><p className="grid-content">{getReadableCategoryName(grid.h[1])}</p></div>
         <div className="grid-square" onClick={() => onTileClick(1, 0)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 1, 0)}</div>
         <div className="grid-square" onClick={() => onTileClick(1, 1)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 1, 1)}</div>
         <div className="grid-square" onClick={() => onTileClick(1, 2)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 1, 2)}</div>
       </div>
       <div className="grid-row">
-        <div className="grid-square"><p className="grid-content">{getReadableCategoryName(grid.h[2])}</p></div>
+        <div className="grid-square category-cell" onClick={() => onCategoryClick(grid.h[2])}><p className="grid-content">{getReadableCategoryName(grid.h[2])}</p></div>
         <div className="grid-square" onClick={() => onTileClick(2, 0)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 2, 0)}</div>
         <div className="grid-square" onClick={() => onTileClick(2, 1)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 2, 1)}</div>
         <div className="grid-square" onClick={() => onTileClick(2, 2)}>{getGridTile(grid, gridState, showSolutions, onShowSolutionsClick, 2, 2)}</div>

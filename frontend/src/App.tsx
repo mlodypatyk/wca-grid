@@ -39,6 +39,7 @@ function App() {
   const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
   const [peopleData, setPeopleData] = useState<Map<string, Person>>(new Map<string, Person>);
   const [showInfo, setShowInfo] = useState<boolean>(false);
+  const [highlightCategory, setHighlightCategory] = useState<string | null>(null);
   const [showStats, setShowStats] = useState<boolean>(false);
   const [mode, setMode] = useState<'daily' | 'free' | 'previous'>('daily');
   const [currentDate, setCurrentDate] = useState<string>(getTodayString);
@@ -107,6 +108,11 @@ function App() {
   const handleCopyLink = function () {
     if (seed == null) return;
     navigator.clipboard.writeText(window.location.origin + '/?seed=' + seed).then(() => { toastCopiedSuccess() }, () => { toastCopiedFailed() })
+  }
+
+  const handleCategoryClick = function (category: string) {
+    setHighlightCategory(category);
+    setShowInfo(true);
   }
 
   const handleClick = function (h: number, v: number) {
@@ -268,7 +274,7 @@ function App() {
         solutionsPeople={solutionsPeople}
         peopleData={peopleData}
       />
-      <InfoDialog open={showInfo} onClose={() => setShowInfo(false)} />
+      <InfoDialog open={showInfo} onClose={() => { setShowInfo(false); setHighlightCategory(null) }} highlightCategory={highlightCategory} />
       <StatsDialog open={showStats} onClose={() => setShowStats(false)} />
       <ModeToggle mode={mode} onSwitch={switchMode} disablePrevious ={todayDailyState === 'ongoing'}/>
       {mode === 'previous' && <DateNav currentDate={currentDate} onShiftDate={shiftDate} onChangeDate={changeDate} />}
@@ -280,6 +286,7 @@ function App() {
         onTileClick={handleClick}
         onShowSolutionsClick={(solutions) => { setSolutionsPeople(solutions); setSolutionsDialog(true) }}
         onCopyLink={handleCopyLink}
+        onCategoryClick={handleCategoryClick}
       />
       <ResultBox
         gameState={gameState()}

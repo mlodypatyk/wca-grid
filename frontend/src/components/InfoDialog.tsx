@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Dialog, DialogPanel } from '@headlessui/react'
 import { loadExportMetadata } from '../lib/api'
 import { parseDate } from '../lib/dates'
+import { getCategoryType } from '../lib/categories'
 
 type Props = {
   open: boolean
   onClose: () => void
+  highlightCategory?: string | null
 }
 
 const formatExportDate = (exportDate: string): string =>
@@ -18,15 +20,26 @@ function handleReset() {
   }
 }
 
-export default function InfoDialog({ open, onClose }: Props) {
+export default function InfoDialog({ open, onClose, highlightCategory }: Props) {
   const backendUrl = import.meta.env.VITE_BACKEND_URL
   const [exportDate, setExportDate] = useState<string | null>(null)
+  const highlightRef = useRef<HTMLParagraphElement | null>(null)
+
+  const highlightType = highlightCategory ? getCategoryType(highlightCategory) : null
 
   useEffect(() => {
     loadExportMetadata(backendUrl)
       .then((metadata) => setExportDate(formatExportDate(metadata.export_date)))
       .catch(() => {})
   }, [backendUrl])
+
+  useEffect(() => {
+    if (open && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ block: 'center' })
+    }
+  }, [open, highlightType])
+
+  const highlightClass = (type: string) => (type === highlightType ? 'info-description category-highlight' : 'info-description')
 
   return (
     <Dialog open={open} onClose={onClose} className="dialog-wrapper">
@@ -37,12 +50,12 @@ export default function InfoDialog({ open, onClose }: Props) {
             <p className="info-header"><b>How to play?</b></p>
             <p className="info-description">For each square, guess a person that fulfills both the vertical and horizontal criteria. Once you guess someone, you cannot reuse them for the entire grid.</p>
             <p className="info-header"><b>Categories</b></p>
-            <p className="info-description"><b>Event sub-X: </b>all people who are subX in an event, average for all sighted events, and single for all blind events.</p>
-            <p className="info-description"><b>World championship podium: </b>all people who podiumed at any world championship</p>
-            <p className="info-description"><b>Continental championship podium: </b>all people from said continent who have a continental title (e.g., Patrick Ponce does not count for Europe, despite coming first in 3x3 at Euroes 2022).</p>
-            <p className="info-description"><b>X+ comps:</b> people who went to more than X comps</p>
-            <p className="info-description"><b>Represents country:</b> people who represent a country or represented a country in the past</p>
-            <p className="info-description"><b>Held record:</b> people who held a particular type of record, doesn't count down (e.g., a WR is not an NR).</p>
+            <p ref={highlightType === 'result' ? highlightRef : null} className={highlightClass('result')}><b>Event sub-X: </b>all people who are subX in an event, average for all sighted events, and single for all blind events.</p>
+            <p ref={highlightType === 'worlds_podium' ? highlightRef : null} className={highlightClass('worlds_podium')}><b>World championship podium: </b>all people who podiumed at any world championship</p>
+            <p ref={highlightType === 'cont_podium' ? highlightRef : null} className={highlightClass('cont_podium')}><b>Continental championship podium: </b>all people from said continent who have a continental title (e.g., Patrick Ponce does not count for Europe, despite coming first in 3x3 at Euroes 2022).</p>
+            <p ref={highlightType === 'comps' ? highlightRef : null} className={highlightClass('comps')}><b>X+ comps:</b> people who went to more than X comps</p>
+            <p ref={highlightType === 'country' ? highlightRef : null} className={highlightClass('country')}><b>Represents country:</b> people who represent a country or represented a country in the past</p>
+            <p ref={highlightType === 'record' ? highlightRef : null} className={highlightClass('record')}><b>Held record:</b> people who held a particular type of record, doesn't count down (e.g., a WR is not an NR).</p>
             <p className="info-header"><b>Data ownership disclaimer</b></p>
             <p className="info-description"> This information is based on competition results owned and maintained by the World Cube Assocation, published at https://worldcubeassociation.org/results as of {exportDate ?? 'an unknown date'}.</p>
             <div className="ff-button-container"><button className="ff-button" onClick={handleReset}>Reset game data</button></div>

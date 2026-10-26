@@ -1,7 +1,11 @@
 import { getNameFromId } from '../eventNames'
 
+export const getCategoryType = function (category: string) {
+  return category.split(':')[0];
+}
+
 export const getReadableCategoryName = function (category: string) {
-  const catType = category.split(':')[0];
+  const catType = getCategoryType(category);
   const catData = category.split(':')[1];
   if (catType == 'result'){
     const event = catData.split(' ')[1];

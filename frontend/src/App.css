@@ -36,6 +36,9 @@
   align-items: center;
   border-radius: 5px;
 }
+.category-cell {
+  cursor: pointer;
+}
 .inner {
   width: 100%;
   height: 100%;

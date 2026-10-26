@@ -43,6 +43,11 @@
 .info-description {
     text-align: left;
 }
+.info-description.category-highlight {
+    background-color: bisque;
+    border-radius: 0.25rem;
+    padding: 0.35rem 0.5rem;
+}
 .info-header {
     padding-top: 2em;
 }
@@ -70,5 +75,8 @@
     background-color: #1f2937;
     color: #f3f4f6;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  }
+  .info-description.category-highlight {
+    background-color: #005d72;
   }
 }
