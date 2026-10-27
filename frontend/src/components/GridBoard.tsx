@@ -23,7 +23,7 @@ const getGridTile = function (grid: Grid, gridState: GridState, showSolutions: b
   return <div className="person-display">
     <img className="person-image" src={person.avatar.thumb_url}></img>
     <p className="name-tag">{person.name}</p>
-    {(rating != null && import.meta.env.DEV) && <GuessRating rating ={rating}/>}
+    {(rating != null) && <GuessRating rating ={rating}/>}
     <div style={{height: 5}}></div>  
   </div>
 }
