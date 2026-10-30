@@ -9,6 +9,13 @@ type Rating = {
 }
 
 const getRating = function (rating: number) : Rating {
+    if (rating == 0) {
+        return {
+            name: 'Unguessed',
+            emoji: '🥷🏽',
+            color: '#DAA520'
+        }
+    }
     if (rating < 0.025){
         return {
             name: 'Mythical',
