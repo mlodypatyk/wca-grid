@@ -280,7 +280,7 @@ def score_distribution():
         user_rank = sum(1 for s in scores if s < score) + 1
         percentile = round(100.0 * sum(1 for s in scores if s > score) / len(scores), 2)
         if score in scores:
-            user_rank = scores.index(score) + 1
+            user_rank = sorted(scores).index(score) + 1
             percentile = round(100*user_rank / len(scores), 2)
 
     return jsonify({
