@@ -70,6 +70,12 @@
     margin-block-end: 1em;
     text-align: left
 }
+.person-search-display .percent-display {
+    width: auto;
+    margin-left: 0.5em;
+    padding: 0 0.5em;
+    white-space: nowrap;
+}
 @media (prefers-color-scheme: dark) {
   .dialog-panel {
     background-color: #1f2937;

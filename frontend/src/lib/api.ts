@@ -69,6 +69,21 @@ export const loadFreeGrid = async function (backendUrl: string): Promise<LoadedS
   return { grid, gridState: makeDefaultGridState(), guessesRemaining: 12 };
 }
 
+export type SquareRating = { hits: number, showings: number }
+
+export const loadSquareRatings = function (backendUrl: string, cat1: string, cat2: string): Promise<Map<string, SquareRating>> {
+  const params = new URLSearchParams();
+  params.append('cat1', cat1)
+  params.append('cat2', cat2)
+  return fetch(backendUrl + `/api/get_square_ratings?${params}`)
+    .then((result) => result.json())
+    .then((json: { ratings: { wca_id: string, hits: number, showings: number }[] }) => {
+      const map = new Map<string, SquareRating>();
+      json.ratings.map((r) => map.set(r.wca_id, { hits: r.hits, showings: r.showings }));
+      return map;
+    });
+}
+
 export const recordGuess = function (backendUrl: string, wca_id: string, cat1: string, cat2: string): Promise<{hits: number, showings: number}> {
   const params = new URLSearchParams();
   params.append('wca_id', wca_id)

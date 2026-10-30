@@ -115,6 +115,29 @@ def get_daily_grid():
         'squares': squares,
     })
 
+@app.route('/api/get_square_ratings')
+def get_square_ratings():
+    cat1 = request.args.get('cat1')
+    cat2 = request.args.get('cat2')
+    if cat1 not in categories:
+        return []
+    if cat2 not in categories:
+        return []
+
+    if cat1 > cat2:
+        cat1, cat2 = cat2, cat1
+
+    cursor = mydb.cursor()
+    cursor.execute(
+        "select wca_id, hits, showings from answer_frequencies where cat1=%s and cat2=%s",
+        (cat1, cat2)
+    )
+    ratings = [
+        {'wca_id': wca_id, 'hits': hits, 'showings': showings}
+        for wca_id, hits, showings in cursor.fetchall()
+    ]
+    return jsonify({'ratings': ratings})
+
 @app.route('/api/record_guess')
 def record_guess():
     wca_id = request.args.get('wca_id')

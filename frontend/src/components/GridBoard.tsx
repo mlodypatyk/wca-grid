@@ -7,17 +7,17 @@ type Props = {
   gridState: GridState
   showSolutions: boolean
   onTileClick: (h: number, v: number) => void
-  onShowSolutionsClick: (solutions: string[]) => void
+  onShowSolutionsClick: (solutions: string[], cat1: string, cat2: string) => void
   onCopyLink: () => void
   onCategoryClick: (category: string) => void
 }
 
-const getGridTile = function (grid: Grid, gridState: GridState, showSolutions: boolean, onShowSolutionsClick: (solutions: string[]) => void, h: number, v: number) {
+const getGridTile = function (grid: Grid, gridState: GridState, showSolutions: boolean, onShowSolutionsClick: (solutions: string[], cat1: string, cat2: string) => void, h: number, v: number) {
   const person = gridState.state[h][v].state
   const rating = gridState.state[h][v].guessRating;
   if (showSolutions){
     const solutions = grid.squares[h][v]
-    return <div className="solution-display" onClick={() => onShowSolutionsClick(solutions)}><p>Solutions: {solutions.length}</p></div>
+    return <div className="solution-display" onClick={() => onShowSolutionsClick(solutions, grid.h[h], grid.v[v])}><p>Solutions: {solutions.length}</p></div>
   }
   if(person == null) return <div className="inner"></div>
   return <div className="person-display">

@@ -8,7 +8,7 @@ import { BarChart, InfoCircle } from '@boxicons/react'
 import { getTodayString, parseDate, toDateString } from './lib/dates'
 import { makeDefaultGridState } from './lib/gridState'
 import { getInitialDailyState, saveStateToLocalStorage } from './lib/storage'
-import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadSeededGrid, loadSolutionsPersonData, recordGuess, saveSeededGrid, searchUsers, submitScore, type LoadedState, type ScoreSubmission } from './lib/api'
+import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadSeededGrid, loadSolutionsPersonData, loadSquareRatings, recordGuess, saveSeededGrid, searchUsers, submitScore, type LoadedState, type ScoreSubmission, type SquareRating } from './lib/api'
 import { buildShareText, type GameState } from './lib/share'
 import { computeScore } from './lib/score'
 import { computeGameState } from './lib/stats'
@@ -37,6 +37,7 @@ function App() {
   const [showSolutions, setShowSolutions] = useState<boolean>(false);
   const [solutionsDialog, setSolutionsDialog] = useState<boolean>(false);
   const [solutionsPeople, setSolutionsPeople] = useState<string[]>([]);
+  const [solutionsRatings, setSolutionsRatings] = useState<Map<string, SquareRating>>(new Map<string, SquareRating>());
   const [peopleData, setPeopleData] = useState<Map<string, Person>>(new Map<string, Person>);
   const [showInfo, setShowInfo] = useState<boolean>(false);
   const [highlightCategory, setHighlightCategory] = useState<string | null>(null);
@@ -272,6 +273,7 @@ function App() {
         open={solutionsDialog}
         onClose={() => setSolutionsDialog(false)}
         solutionsPeople={solutionsPeople}
+        ratings={solutionsRatings}
         peopleData={peopleData}
       />
       <InfoDialog open={showInfo} onClose={() => { setShowInfo(false); setHighlightCategory(null) }} highlightCategory={highlightCategory} />
@@ -284,7 +286,7 @@ function App() {
         gridState={gridState}
         showSolutions={showSolutions}
         onTileClick={handleClick}
-        onShowSolutionsClick={(solutions) => { setSolutionsPeople(solutions); setSolutionsDialog(true) }}
+        onShowSolutionsClick={(solutions, cat1, cat2) => { setSolutionsPeople(solutions); setSolutionsDialog(true); loadSquareRatings(backendUrl, cat1, cat2).then(setSolutionsRatings) }}
         onCopyLink={handleCopyLink}
         onCategoryClick={handleCategoryClick}
       />
