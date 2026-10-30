@@ -239,3 +239,24 @@ button.copyLinkButton {
     background: transparent;
     cursor: pointer;
 }
+.score-distribution {
+    margin: 1em auto;
+    max-width: 40em;
+    padding: 0.5em 1em;
+}
+.score-distribution-title {
+    margin: 0.25em 0;
+    font-size: 1.1em;
+}
+.score-distribution-subtitle {
+    margin: 0.25em 0 0.5em 0;
+}
+.score-distribution-chart {
+    width: 100%;
+}
+@media (max-width:480px) {
+    .score-distribution {
+        max-width: 95vw;
+        padding: 0.5em 0.25em;
+    }
+}

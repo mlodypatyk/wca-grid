@@ -14,6 +14,8 @@ export const buildShareText = function (
   gridState: GridState,
   guessesRemaining: number,
   gameState: GameState,
+  score?: number,
+  rank?: number,
 ): string {
   let finalText = ''
   if (mode !== 'free') {
@@ -21,6 +23,13 @@ export const buildShareText = function (
   }
   if (gameState == "win") {
     finalText += `${guessesRemaining} guesses remaining\n`
+  }
+  if (score !== undefined) {
+    finalText += `Score: ${score}`
+    if (rank !== undefined) {
+      finalText += ` (rank #${rank})`
+    }
+    finalText += '\n'
   }
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {

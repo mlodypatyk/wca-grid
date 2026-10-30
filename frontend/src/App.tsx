@@ -8,7 +8,7 @@ import { BarChart, InfoCircle } from '@boxicons/react'
 import { getTodayString, parseDate, toDateString } from './lib/dates'
 import { makeDefaultGridState } from './lib/gridState'
 import { getInitialDailyState, saveStateToLocalStorage } from './lib/storage'
-import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadSeededGrid, loadSolutionsPersonData, loadSquareRatings, recordGuess, saveSeededGrid, searchUsers, submitScore, type LoadedState, type ScoreSubmission, type SquareRating } from './lib/api'
+import { loadDailyGrid, loadFreeGrid, loadGridFromApi, loadScoreDistribution, loadSeededGrid, loadSolutionsPersonData, loadSquareRatings, recordGuess, saveSeededGrid, searchUsers, submitScore, type LoadedState, type ScoreDistribution, type ScoreSubmission, type SquareRating } from './lib/api'
 import { buildShareText, type GameState } from './lib/share'
 import { computeScore } from './lib/score'
 import { computeGameState } from './lib/stats'
@@ -45,6 +45,7 @@ function App() {
   const [mode, setMode] = useState<'daily' | 'free' | 'previous'>('daily');
   const [currentDate, setCurrentDate] = useState<string>(getTodayString);
   const [seed, setSeed] = useState<string | null>(null);
+  const [scoreDistribution, setScoreDistribution] = useState<ScoreDistribution | null>(null);
 
   const modeRef = useRef(mode);
   const currentDateRef = useRef(currentDate);
@@ -63,6 +64,7 @@ function App() {
   const switchMode = function (newMode: 'daily' | 'free' | 'previous') {
     if (newMode === mode) return;
     setMode(newMode);
+    setScoreDistribution(null);
     setShowSolutions(false);
     setSearchTerm("");
     setSearchPeople([]);
@@ -87,6 +89,7 @@ function App() {
   const changeDate = function (newDate: string) {
     if (newDate === currentDateRef.current) return;
     setCurrentDate(newDate);
+    setScoreDistribution(null);
     setShowSolutions(false);
     loadDailyGrid(backendUrl, newDate).then(applyLoadedState);
   }
@@ -102,7 +105,7 @@ function App() {
     if (mode === 'free' && seed) {
       saveSeededGrid(backendUrl, seed);
     }
-    const finalText = buildShareText(mode, grid, gridState, guessesRemaining, gameState());
+    const finalText = buildShareText(mode, grid, gridState, guessesRemaining, gameState(), computeScore(gridState), scoreDistribution?.user_rank ?? undefined);
     navigator.clipboard.writeText(finalText).then(() => { toastCopiedSuccess() }, () => { toastCopiedFailed() })
   }
 
@@ -159,6 +162,7 @@ function App() {
     setGridState(makeDefaultGridState())
     setGuessesRemaining(12);
     setShowSolutions(false);
+    setScoreDistribution(null);
   }
 
   const gameState = function (): GameState {
@@ -233,6 +237,27 @@ function App() {
 
   useEffect(() => {
     if (grid === null) return;
+    if (mode !== 'daily' && mode !== 'previous') return;
+    const state = computeGameState(gridState, guessesRemaining);
+    if (state === 'ongoing') return;
+    let hasCorrectGuess = false;
+    let allRatingsReady = true;
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const tile = gridState.state[i][j];
+        if (tile.state != null) {
+          hasCorrectGuess = true;
+          if (tile.guessRating == null) allRatingsReady = false;
+        }
+      }
+    }
+    if (!hasCorrectGuess) return;
+    if (!allRatingsReady) return;
+    loadScoreDistribution(backendUrl, currentDate, computeScore(gridState)).then(setScoreDistribution).catch(() => setScoreDistribution(null));
+  }, [grid, gridState, guessesRemaining, mode, currentDate, backendUrl])
+
+  useEffect(() => {
+    if (grid === null) return;
     loadSolutionsPersonData(grid).then(setPeopleData);
   }, [grid])
 
@@ -295,6 +320,8 @@ function App() {
         guessesRemaining={guessesRemaining}
         showSolutions={showSolutions}
         isFree={mode === 'free'}
+        score={computeScore(gridState)}
+        scoreDistribution={scoreDistribution}
         onShare={handleShare}
         onGiveUp={() => setGuessesRemaining(0)}
         onToggleSolutions={() => setShowSolutions(!showSolutions)}

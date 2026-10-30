@@ -71,6 +71,21 @@ export const loadFreeGrid = async function (backendUrl: string): Promise<LoadedS
 
 export type SquareRating = { hits: number, showings: number }
 
+export type ScoreDistribution = {
+  date: string
+  total: number
+  distribution: { min: number; max: number; count: number }[]
+  user_rank: number | null
+  percentile: number | null
+}
+
+export const loadScoreDistribution = function (backendUrl: string, date: string, score?: number): Promise<ScoreDistribution> {
+  const params = new URLSearchParams();
+  params.append('date', date)
+  if (score !== undefined) params.append('score', String(score))
+  return fetch(`${backendUrl}/api/score_distribution?${params}`).then((result) => result.json());
+}
+
 export const loadSquareRatings = function (backendUrl: string, cat1: string, cat2: string): Promise<Map<string, SquareRating>> {
   const params = new URLSearchParams();
   params.append('cat1', cat1)

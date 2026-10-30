@@ -239,6 +239,58 @@ def submit_score():
     mydb.commit()
     return jsonify({'ok': True})
 
+@app.route('/api/score_distribution')
+def score_distribution():
+    try:
+        puzzle_date = date.fromisoformat(request.args.get('date', ''))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'invalid date'}), 400
+
+    score_arg = request.args.get('score')
+    score = None
+    if score_arg is not None:
+        try:
+            score = int(score_arg)
+        except (TypeError, ValueError):
+            return jsonify({'error': 'invalid score'}), 400
+        if not 0 <= score <= 2000:
+            return jsonify({'error': 'invalid score'}), 400
+
+    cursor = mydb.cursor()
+    cursor.execute(
+        "select score from grid_scores where puzzle_date = %s",
+        (puzzle_date,)
+    )
+    scores = [row[0] for row in cursor.fetchall()]
+
+    bin_width = 100
+    bins = {}
+    for s in scores:
+        bin_min = (s // bin_width) * bin_width
+        bins[bin_min] = bins.get(bin_min, 0) + 1
+
+    distribution = [
+        {'min': bin_min, 'max': bin_min + bin_width - 1, 'count': count}
+        for bin_min, count in sorted(bins.items())
+    ]
+
+    user_rank = None
+    percentile = None
+    if score is not None and scores:
+        user_rank = sum(1 for s in scores if s < score) + 1
+        percentile = round(100.0 * sum(1 for s in scores if s > score) / len(scores), 2)
+        if score in scores:
+            user_rank = scores.index(score) + 1
+            percentile = round(100*user_rank / len(scores), 2)
+
+    return jsonify({
+        'date': puzzle_date.isoformat(),
+        'total': len(scores),
+        'distribution': distribution,
+        'user_rank': user_rank,
+        'percentile': percentile,
+    })
+
 @app.route('/api/stats')
 def stats():
     token = os.getenv('STATS_TOKEN')

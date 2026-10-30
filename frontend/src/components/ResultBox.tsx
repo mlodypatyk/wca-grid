@@ -1,18 +1,22 @@
 import { Share } from '@boxicons/react'
 import type { GameState } from '../lib/share'
+import type { ScoreDistribution as ScoreDistributionType } from '../lib/api'
+import ScoreDistribution from './ScoreDistribution'
 
 type Props = {
   gameState: GameState
   guessesRemaining: number
   showSolutions: boolean
   isFree: boolean
+  score: number
+  scoreDistribution: ScoreDistributionType | null
   onShare: () => void
   onGiveUp: () => void
   onToggleSolutions: () => void
   onNewGame: () => void
 }
 
-export default function ResultBox({ gameState, guessesRemaining, showSolutions, isFree, onShare, onGiveUp, onToggleSolutions, onNewGame }: Props) {
+export default function ResultBox({ gameState, guessesRemaining, showSolutions, isFree, score, scoreDistribution, onShare, onGiveUp, onToggleSolutions, onNewGame }: Props) {
   return (
     <>
       {gameState == "ongoing" && <div className="ff-button-container"><button className="ff-button" onClick={onGiveUp}>Give up</button></div>}
@@ -27,6 +31,7 @@ export default function ResultBox({ gameState, guessesRemaining, showSolutions, 
         <button className="shareButton" onClick={onShare}><span className="buttonText">Share</span> <Share /></button>
       </div>}
       {gameState != "ongoing" && <p><button onClick={onToggleSolutions}>{showSolutions ? 'Hide solutions' : 'Show solutions'}</button>{isFree && <button className="resetButton" onClick={onNewGame}>New game</button>}</p>}
+      {gameState != "ongoing" && scoreDistribution !== null && <ScoreDistribution score={score} distribution={scoreDistribution} />}
     </>
   )
 }
