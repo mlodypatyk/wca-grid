@@ -1,6 +1,7 @@
 services:
   backend:
     build: ./flask
+    restart: always
     ports:
       - "127.0.0.1:5000:5000"
     volumes:
@@ -31,6 +32,7 @@ services:
 
   flyway:
     image: flyway/flyway:10
+    restart: on-failure
     command: -url=jdbc:postgresql://db:5432/wcadata -user=wca -password=wcapass -baselineOnMigrate=true -baselineVersion=1 migrate
     volumes:
       - ./migrations:/flyway/sql
