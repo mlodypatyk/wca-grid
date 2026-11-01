@@ -37,7 +37,7 @@ export const buildShareText = function (
       if (person == null) {
         finalText += '❌'
       } else {
-        finalText += getFlagEmoji(person.country.iso2)
+        finalText += getFlagEmoji(person.country_iso2)
       }
     }
     finalText += '\n'
